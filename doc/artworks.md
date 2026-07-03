@@ -1,5 +1,12 @@
 # Final works 
 
+## 2025
+
+![acm_2025_1](assets/2025/dxm.png)
+![acm_2025_2](assets/2025/hyw.png)
+![acm_2025_3](assets/2025/tjh.png)
+![acm_2025_4](assets/2025/wzy.png)
+
 ## 2024
 
 ![acm_1](assets/2024/dzh.jpg)
