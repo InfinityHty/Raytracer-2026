@@ -59,7 +59,6 @@ fn main() {
     );
     img.save(path).expect("Cannot save the image to the file");
 }
-
 fn ray_color(ray: Ray) -> Rgb<u8> {
     let unit_direction = ray.direction().normalize();
     let a = (unit_direction.get_y() + 1.0) * 0.5;
