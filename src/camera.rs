@@ -23,7 +23,7 @@ impl Camera {
     }
     pub fn render(&self, world: &HittableList) {
         // 保存路径
-        let path = std::path::Path::new("output/book1/image5.png");
+        let path = std::path::Path::new("output/book1/image6.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
@@ -55,24 +55,24 @@ impl Camera {
         for j in 0..height {
             for i in 0..self.width {
                 let pixel_ij = pixel_00 + pixel_u * i as f64 + pixel_v * j as f64;
-                let ray_direction = pixel_ij - eye_point;
-                let ray = Ray::new(eye_point, ray_direction);
+                // let ray_direction = pixel_ij - eye_point;
+                // let ray = Ray::new(eye_point, ray_direction);
                 let pixel = img.get_pixel_mut(i, j);
-                let pixel_color = Camera::ray_color(&ray, world);
-                *pixel = (pixel_color * 256.0).to_rgb();
+                // let pixel_color = Camera::ray_color(&ray, world);
+                // *pixel = (pixel_color * 256.0).to_rgb();
 
-                // let mut pixel_color = Vec3::new(0.0, 0.0, 0.0);
-                // for _sample_times in 0..self.samples_per_pixel {
-                //     let ray = Camera::get_ray(&pixel_ij, &eye_point, pixel_u.x, pixel_v.y);
-                //     pixel_color = pixel_color + Camera::ray_color(&ray, world);
-                // }
-                // pixel_color = pixel_color / self.samples_per_pixel as f64;
-                // let color_interval = Interval::new(0.0, 1.0);
-                // pixel_color.x = color_interval.clamp(pixel_color.x);
-                // pixel_color.y = color_interval.clamp(pixel_color.y);
-                // pixel_color.z = color_interval.clamp(pixel_color.z);
-                // pixel_color = pixel_color * 256.0;
-                // *pixel = pixel_color.to_rgb();
+                let mut pixel_color = Vec3::new(0.0, 0.0, 0.0);
+                for _sample_times in 0..self.samples_per_pixel {
+                    let ray = Camera::get_ray(&pixel_ij, &eye_point, pixel_u.x, pixel_v.y);
+                    pixel_color = pixel_color + Camera::ray_color(&ray, world);
+                }
+                pixel_color = pixel_color / self.samples_per_pixel as f64;
+                let color_interval = Interval::new(0.0, 1.0);
+                pixel_color.x = color_interval.clamp(pixel_color.x);
+                pixel_color.y = color_interval.clamp(pixel_color.y);
+                pixel_color.z = color_interval.clamp(pixel_color.z);
+                pixel_color = pixel_color * 256.0;
+                *pixel = pixel_color.to_rgb();
             }
             progress.inc(1);
         }
