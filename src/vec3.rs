@@ -11,15 +11,17 @@ impl Vec3 {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
     }
-    pub fn to_rgb(&self) -> Rgb<u8> {
+    pub fn to_rgb(self) -> Rgb<u8> {
         Rgb([self.x as u8, self.y as u8, self.z as u8])
     }
+    #[allow(dead_code)]
     pub fn get_x(&self) -> f64 {
         self.x
     }
     pub fn get_y(&self) -> f64 {
         self.y
     }
+    #[allow(dead_code)]
     pub fn get_z(&self) -> f64 {
         self.z
     }
