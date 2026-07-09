@@ -1,5 +1,6 @@
 // vec3 后续补充接口
 use image::Rgb;
+use rand::{RngExt, rng};
 use std::ops;
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3 {
@@ -10,6 +11,19 @@ pub struct Vec3 {
 impl Vec3 {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
+    }
+    pub fn generate_rand_norm(min: f64, max: f64) -> Self {
+        let mut rng = rng();
+        loop {
+            let x = rng.random_range(min..max);
+            let y = rng.random_range(min..max);
+            let z = rng.random_range(min..max);
+            let vec = Vec3::new(x, y, z);
+            let sq = vec.length_squared();
+            if sq <= 1.0 && sq > 1e-160 {
+                return vec / sq.sqrt();
+            }
+        }
     }
     pub fn to_rgb(self) -> Rgb<u8> {
         Rgb([self.x as u8, self.y as u8, self.z as u8])
