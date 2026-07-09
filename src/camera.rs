@@ -30,7 +30,7 @@ impl Camera {
     }
     pub fn render(&self, world: &HittableList) {
         // 保存路径
-        let path = std::path::Path::new("output/book1/image9.png");
+        let path = std::path::Path::new("output/book1/image10.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
@@ -106,10 +106,8 @@ impl Camera {
         let interval = Interval::new(0.001, f64::INFINITY);
         let flag = world.hit(ray, &interval, &mut rec);
         if flag {
-            let mut reflection_direction = Vec3::generate_rand_norm(-1.0, 1.0);
-            if reflection_direction * rec.normal < 0.0 {
-                reflection_direction = reflection_direction * -1.0;
-            }
+            // 余弦分布
+            let reflection_direction = rec.normal + Vec3::generate_rand_norm(-1.0, 1.0);
             let reflection_ray = Ray::new(rec.hit_point, reflection_direction);
             Camera::ray_color(&reflection_ray, world, depth - 1) * 0.5
         } else {
