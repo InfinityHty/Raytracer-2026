@@ -7,7 +7,7 @@ mod ray;
 use ray::Ray;
 fn main() {
     // 创建保存路径
-    let path = std::path::Path::new("output/book1/image3.png");
+    let path = std::path::Path::new("output/book1/image4.png");
     let prefix = path.parent().unwrap();
     std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
     // 设置eye point viewport等等参数
@@ -61,8 +61,11 @@ fn main() {
     img.save(path).expect("Cannot save the image to the file");
 }
 fn ray_color(ray: &Ray, center: &Vec3) -> Rgb<u8> {
-    if hit_sphere(*center, 0.5, ray) {
-        let color = vec3::Vec3::new(256.0, 0.0, 0.0);
+    // 增加了t的计算
+    let (flag, t_hit) = hit_sphere(*center, 0.5, ray);
+    if flag {
+        let color =
+            (normal_on_sphere(center, ray.at(t_hit), 0.5) + Vec3::new(1.0, 1.0, 1.0)) * 0.5 * 256.0;
         color.to_rgb()
     } else {
         let unit_direction = ray.direction().normalize();
@@ -72,12 +75,18 @@ fn ray_color(ray: &Ray, center: &Vec3) -> Rgb<u8> {
         color.to_rgb()
     }
 }
-fn hit_sphere(center: Vec3, radius: f64, ray: &Ray) -> bool {
+fn hit_sphere(center: Vec3, radius: f64, ray: &Ray) -> (bool, f64) {
     let a = ray.direction().length_squared();
     let b = ray.direction() * (center - ray.ori()) * -2.0;
     let c = (center - ray.ori()).length_squared() - radius * radius;
     if b * b - 4.0 * a * c < 0.0 {
-        return false;
+        return (false, 0.0);
     }
-    true
+    (true, (-b - (b * b - 4.0 * a * c).sqrt()) / (2.0 * a))
+}
+fn normal_on_sphere(center: &Vec3, hit: Vec3, r: f64) -> Vec3 {
+    let x = (hit.get_x() - center.get_x()) / r;
+    let y = (hit.get_y() - center.get_y()) / r;
+    let z = (hit.get_z() - center.get_z()) / r;
+    Vec3::new(x, y, z)
 }
