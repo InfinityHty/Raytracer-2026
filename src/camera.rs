@@ -12,18 +12,25 @@ pub struct Camera {
     width: u32,
     #[allow(dead_code)]
     samples_per_pixel: u32,
+    max_depth: u32,
 }
 impl Camera {
-    pub fn new(aspect_ration: f64, width: u32, samples_per_pixel: u32) -> Self {
+    pub fn new(
+        aspect_ration: f64,
+        width: u32,
+        samples_per_pixel: u32,
+        camera_max_depth: u32,
+    ) -> Self {
         Self {
             aspect_ration,
             width,
             samples_per_pixel,
+            max_depth: camera_max_depth,
         }
     }
     pub fn render(&self, world: &HittableList) {
         // 保存路径
-        let path = std::path::Path::new("output/book1/image7.png");
+        let path = std::path::Path::new("output/book1/image8.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
@@ -64,7 +71,7 @@ impl Camera {
                 let mut pixel_color = Vec3::new(0.0, 0.0, 0.0);
                 for _sample_times in 0..self.samples_per_pixel {
                     let ray = Camera::get_ray(&pixel_ij, &eye_point, pixel_u.x, pixel_v.y);
-                    pixel_color = pixel_color + Camera::ray_color(&ray, world);
+                    pixel_color = pixel_color + Camera::ray_color(&ray, world, self.max_depth);
                 }
                 pixel_color = pixel_color / self.samples_per_pixel as f64;
                 let color_interval = Interval::new(0.0, 1.0);
@@ -85,7 +92,11 @@ impl Camera {
         img.save(path).expect("Cannot save the image to the file");
     }
 
-    fn ray_color(ray: &Ray, world: &HittableList) -> Vec3 {
+    fn ray_color(ray: &Ray, world: &HittableList, depth: u32) -> Vec3 {
+        if depth == 0 {
+            return Vec3::new(0.0, 0.0, 0.0);
+        }
+        // 防止过度递归
         let mut rec = HitRecord {
             hit_point: Vec3::new(0.0, 0.0, 0.0),
             normal: Vec3::new(0.0, 0.0, 0.0),
@@ -100,7 +111,7 @@ impl Camera {
                 reflection_direction = reflection_direction * -1.0;
             }
             let reflection_ray = Ray::new(rec.hit_point, reflection_direction);
-            Camera::ray_color(&reflection_ray, world) * 0.5
+            Camera::ray_color(&reflection_ray, world, depth - 1) * 0.5
         } else {
             let unit_direction = ray.direction().normalize();
             let a = (unit_direction.get_y() + 1.0) * 0.5;

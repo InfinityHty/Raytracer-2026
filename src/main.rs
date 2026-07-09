@@ -13,7 +13,8 @@ fn main() {
     let aspect_ration = 16.0 / 9.0;
     let width = 400;
     let samples_per_pixel = 10;
-    let camera = Camera::new(aspect_ration, width, samples_per_pixel);
+    let camera_max_depth = 50;
+    let camera = Camera::new(aspect_ration, width, samples_per_pixel, camera_max_depth);
     // 创建世界
     let mut world = HittableList::new();
     let sphere_0 = Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5);
