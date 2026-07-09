@@ -19,10 +19,10 @@ fn main() {
     let height = (width as f64 / aspect_ration) as u32;
 
     let viewport_height = 2.0;
-    let viewport_width = (viewport_height * (width as f64 / height as f64));
+    let viewport_width = viewport_height * (width as f64 / height as f64);
 
     let viewport_v = Vec3::new(0.0, -viewport_height, 0.0);
-    let viewport_u = Vec3::new(viewport_width as f64, 0.0, 0.0);
+    let viewport_u = Vec3::new(viewport_width, 0.0, 0.0);
 
     let pixel_u = viewport_u / width as f64;
     let pixel_v = viewport_v / height as f64;
@@ -44,7 +44,7 @@ fn main() {
             let pixel_ij = pixel_00 + pixel_u * i as f64 + pixel_v * j as f64;
             // println!("{}",pixel_ij.get_y());
             let ray_direction = pixel_ij - eye_point;
-            let ray = Ray::new(&eye_point, &ray_direction);
+            let ray = Ray::new(eye_point, ray_direction);
             let pixel = img.get_pixel_mut(i, j);
 
             *pixel = ray_color(ray);
