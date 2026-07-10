@@ -17,7 +17,7 @@ fn main() {
     let width = 400;
     let samples_per_pixel = 100;
     let camera_max_depth = 50;
-    let field_of_view = 90.0;
+    let field_of_view = 20.0;
 
     let look_from = Vec3::new(-2.0, 2.0, 1.0);
     let look_at = Vec3::new(0.0, 0.0, -1.0);
