@@ -1,12 +1,14 @@
 use crate::hittable::*;
 use crate::hittable_list::*;
 use crate::interval::*;
+use crate::material::*;
 use crate::ray::*;
 use crate::vec3::*;
 use console::style; // 给控制台打印的文字加颜色、加粗等样式
 use image::{ImageBuffer, RgbImage}; // Rust最主流的图像处理库 创建画布 逐像素绘制光线追踪结果 导出文件图片
 use indicatif::ProgressBar; // 进度条可视化
 use rand::{RngExt, rng};
+use std::sync::Arc;
 pub struct Camera {
     aspect_ration: f64,
     width: u32,
@@ -30,7 +32,7 @@ impl Camera {
     }
     pub fn render(&self, world: &HittableList) {
         // 保存路径
-        let path = std::path::Path::new("output/book1/image10.png");
+        let path = std::path::Path::new("output/book1/image13.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
@@ -62,11 +64,7 @@ impl Camera {
         for j in 0..height {
             for i in 0..self.width {
                 let pixel_ij = pixel_00 + pixel_u * i as f64 + pixel_v * j as f64;
-                // let ray_direction = pixel_ij - eye_point;
-                // let ray = Ray::new(eye_point, ray_direction);
                 let pixel = img.get_pixel_mut(i, j);
-                // let pixel_color = Camera::ray_color(&ray, world);
-                // *pixel = (pixel_color * 256.0).to_rgb();
 
                 let mut pixel_color = Vec3::new(0.0, 0.0, 0.0);
                 for _sample_times in 0..self.samples_per_pixel {
@@ -78,6 +76,8 @@ impl Camera {
                 pixel_color.x = color_interval.clamp(pixel_color.x);
                 pixel_color.y = color_interval.clamp(pixel_color.y);
                 pixel_color.z = color_interval.clamp(pixel_color.z);
+
+                pixel_color = Camera::linear_to_gamma(pixel_color);
                 pixel_color = pixel_color * 256.0;
                 *pixel = pixel_color.to_rgb();
             }
@@ -102,21 +102,38 @@ impl Camera {
             normal: Vec3::new(0.0, 0.0, 0.0),
             t: 0.0,
             front_face: true,
+            material: Arc::new(Lambertian {
+                albedo: Vec3::new(0.0, 0.0, 0.0),
+            }),
         };
         let interval = Interval::new(0.001, f64::INFINITY);
         let flag = world.hit(ray, &interval, &mut rec);
         if flag {
+            let mut scattered_ray: Ray =
+                Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0));
+            let mut reflect_rate = Vec3::new(0.0, 0.0, 0.0);
+            if rec
+                .material
+                .scatter(ray, &mut scattered_ray, &rec, &mut reflect_rate)
+            {
+                let mut color = Camera::ray_color(&scattered_ray, world, depth - 1);
+                color.x *= reflect_rate.x;
+                color.y *= reflect_rate.y;
+                color.z *= reflect_rate.z;
+                color
+            } else {
+                Vec3::new(0.0, 0.0, 0.0)
+            }
             // 余弦分布
-            let reflection_direction = rec.normal + Vec3::generate_rand_norm(-1.0, 1.0);
-            let reflection_ray = Ray::new(rec.hit_point, reflection_direction);
-            Camera::ray_color(&reflection_ray, world, depth - 1) * 0.5
+            // let reflection_direction = rec.normal + Vec3::generate_rand_norm(-1.0, 1.0);
+            // let reflection_ray = Ray::new(rec.hit_point, reflection_direction);
+            // Camera::ray_color(&reflection_ray, world, depth - 1) * 0.5
         } else {
             let unit_direction = ray.direction().normalize();
             let a = (unit_direction.get_y() + 1.0) * 0.5;
             Vec3::new(1.0, 1.0, 1.0) * (1.0 - a) + Vec3::new(0.5, 0.7, 1.0) * a
         }
     }
-    #[allow(dead_code)]
     fn get_ray(pixel_center: &Vec3, eye_point: &Vec3, delta_u: f64, delta_v: f64) -> Ray {
         // 一定范围内随机采样
         let pixel_sample = Vec3::new(
@@ -131,5 +148,8 @@ impl Camera {
     fn random(range: f64) -> f64 {
         let mut rng = rng();
         rng.random_range(-range..range)
+    }
+    fn linear_to_gamma(linear: Vec3) -> Vec3 {
+        Vec3::new(linear.x.sqrt(), linear.y.sqrt(), linear.z.sqrt())
     }
 }

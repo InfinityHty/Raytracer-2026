@@ -25,6 +25,13 @@ impl Vec3 {
             }
         }
     }
+    pub fn near_zero(&self) -> bool {
+        const EPSILON: f64 = 1e-8;
+        if self.x.abs() < EPSILON && self.y.abs() < EPSILON && self.z.abs() < EPSILON {
+            return true;
+        }
+        false
+    }
     pub fn to_rgb(self) -> Rgb<u8> {
         Rgb([self.x as u8, self.y as u8, self.z as u8])
     }
