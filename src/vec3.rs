@@ -32,6 +32,13 @@ impl Vec3 {
         }
         false
     }
+    pub fn cross_multiply(v1: Vec3, v2: Vec3) -> Vec3 {
+        Vec3 {
+            x: v1.y * v2.z - v1.z * v2.y,
+            y: v1.z * v2.x - v1.x * v2.z,
+            z: v1.x * v2.y - v1.y * v2.x,
+        }
+    }
     pub fn to_rgb(self) -> Rgb<u8> {
         Rgb([self.x as u8, self.y as u8, self.z as u8])
     }

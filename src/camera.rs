@@ -15,14 +15,21 @@ pub struct Camera {
     samples_per_pixel: u32,
     max_depth: u32,
     field_of_view: f64,
+    look_from: Vec3,
+    look_at: Vec3,
+    view_up: Vec3,
 }
 impl Camera {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         aspect_ration: f64,
         width: u32,
         samples_per_pixel: u32,
         camera_max_depth: u32,
         field_of_view: f64,
+        look_from: Vec3,
+        look_at: Vec3,
+        view_up: Vec3,
     ) -> Self {
         Self {
             aspect_ration,
@@ -30,16 +37,22 @@ impl Camera {
             samples_per_pixel,
             max_depth: camera_max_depth,
             field_of_view,
+            look_from,
+            look_at,
+            view_up,
         }
     }
     pub fn render(&self, world: &HittableList) {
         // 保存路径
-        let path = std::path::Path::new("output/book1/image19.png");
+        let path = std::path::Path::new("output/book1/image20.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
-        let eye_point: Vec3 = Vec3::new(0.0, 0.0, 0.0);
-        let f = 1.0;
+        let f = (self.look_from - self.look_at).length_squared().sqrt();
+
+        let w = (self.look_from - self.look_at).normalize();
+        let u = Vec3::cross_multiply(self.view_up, w).normalize();
+        let v = Vec3::cross_multiply(w, u).normalize();
 
         let height = (self.width as f64 / self.aspect_ration) as u32;
 
@@ -47,13 +60,13 @@ impl Camera {
             (self.field_of_view / 180.0 * std::f64::consts::PI / 2.0).tan() * f * 2.0;
         let viewport_width = viewport_height * (self.width as f64 / height as f64);
 
-        let viewport_v = Vec3::new(0.0, -viewport_height, 0.0);
-        let viewport_u = Vec3::new(viewport_width, 0.0, 0.0);
+        let viewport_v = v * viewport_height * -1.0;
+        let viewport_u = u * viewport_width;
 
         let pixel_u = viewport_u / self.width as f64;
         let pixel_v = viewport_v / height as f64;
 
-        let upper_left = eye_point - Vec3::new(0.0, 0.0, f) - viewport_u / 2.0 - viewport_v / 2.0;
+        let upper_left = self.look_at - viewport_u / 2.0 - viewport_v / 2.0;
         let pixel_00 = upper_left + pixel_u * 0.5 + pixel_v * 0.5;
 
         let mut img: RgbImage = ImageBuffer::new(self.width, height);
@@ -71,7 +84,7 @@ impl Camera {
 
                 let mut pixel_color = Vec3::new(0.0, 0.0, 0.0);
                 for _sample_times in 0..self.samples_per_pixel {
-                    let ray = Camera::get_ray(&pixel_ij, &eye_point, pixel_u.x, pixel_v.y);
+                    let ray = Camera::get_ray(pixel_ij, &self.look_from, pixel_u, pixel_v);
                     pixel_color = pixel_color + Camera::ray_color(&ray, world, self.max_depth);
                 }
                 pixel_color = pixel_color / self.samples_per_pixel as f64;
@@ -137,13 +150,10 @@ impl Camera {
             Vec3::new(1.0, 1.0, 1.0) * (1.0 - a) + Vec3::new(0.5, 0.7, 1.0) * a
         }
     }
-    fn get_ray(pixel_center: &Vec3, eye_point: &Vec3, delta_u: f64, delta_v: f64) -> Ray {
+    fn get_ray(pixel_center: Vec3, eye_point: &Vec3, delta_u: Vec3, delta_v: Vec3) -> Ray {
         // 一定范围内随机采样
-        let pixel_sample = Vec3::new(
-            pixel_center.x + delta_u * Camera::random(0.5),
-            pixel_center.y + delta_v * Camera::random(0.5),
-            pixel_center.z,
-        );
+        let pixel_sample =
+            pixel_center + delta_u * Camera::random(0.5) + delta_v * Camera::random(0.5);
         let origin = Vec3::new(eye_point.x, eye_point.y, eye_point.z);
         let direction = pixel_sample - origin;
         Ray::new(origin, direction)
