@@ -37,6 +37,7 @@ impl Material for Lambertian {
 
 pub struct Metal {
     pub albedo: Vec3,
+    pub fuzz: f64, // [0,1]
 }
 impl Metal {
     pub fn mirror_reflect(in_direction: Vec3, normal: Vec3) -> Vec3 {
@@ -52,10 +53,11 @@ impl Material for Metal {
         reflect_rate: &mut Vec3,
     ) -> bool {
         scattered_ray.origin = rec.hit_point;
-        scattered_ray.direction = Metal::mirror_reflect(_in_ray.direction, rec.normal);
+        scattered_ray.direction = Metal::mirror_reflect(_in_ray.direction, rec.normal).normalize()
+            + Vec3::generate_rand_norm(-1.0, 1.0) * self.fuzz;
         reflect_rate.x = self.albedo.x;
         reflect_rate.y = self.albedo.y;
         reflect_rate.z = self.albedo.z;
-        true
+        scattered_ray.direction * rec.normal > 0.0
     }
 }
