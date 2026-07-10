@@ -25,9 +25,8 @@ fn main() {
     let material_center = Arc::new(Lambertian {
         albedo: Vec3::new(0.1, 0.2, 0.5),
     });
-    let material_left = Arc::new(Metal {
-        albedo: Vec3::new(0.8, 0.8, 0.8),
-        fuzz: 0.3,
+    let material_left = Arc::new(Dielectrics {
+        refractive_index: 1.50,
     });
     let material_right = Arc::new(Metal {
         albedo: Vec3::new(0.8, 0.6, 0.2),

@@ -8,12 +8,12 @@ pub trait Material {
         _in_ray: &Ray,
         scattered_ray: &mut Ray,
         rec: &HitRecord,
-        reflect_rate: &mut Vec3,
+        attenuation: &mut Vec3, // 衰减
     ) -> bool;
 }
 // 漫反射
 pub struct Lambertian {
-    pub albedo: Vec3, // 反射光/入射光 [0.0,1.0]
+    pub albedo: Vec3, // 反照率 [0.0,1.0]
 }
 impl Material for Lambertian {
     fn scatter(
@@ -21,16 +21,16 @@ impl Material for Lambertian {
         _in_ray: &Ray,
         scattered_ray: &mut Ray,
         rec: &HitRecord,
-        reflect_rate: &mut Vec3,
+        attenuation: &mut Vec3,
     ) -> bool {
         scattered_ray.direction = rec.normal + Vec3::generate_rand_norm(-1.0, 1.0);
         if scattered_ray.direction.near_zero() {
             scattered_ray.direction = rec.normal;
         }
         scattered_ray.origin = Vec3::new(rec.hit_point.x, rec.hit_point.y, rec.hit_point.z);
-        reflect_rate.x = self.albedo.x;
-        reflect_rate.y = self.albedo.y;
-        reflect_rate.z = self.albedo.z;
+        attenuation.x = self.albedo.x;
+        attenuation.y = self.albedo.y;
+        attenuation.z = self.albedo.z;
         true
     }
 }
@@ -50,14 +50,50 @@ impl Material for Metal {
         _in_ray: &Ray,
         scattered_ray: &mut Ray,
         rec: &HitRecord,
-        reflect_rate: &mut Vec3,
+        attenuation: &mut Vec3,
     ) -> bool {
         scattered_ray.origin = rec.hit_point;
         scattered_ray.direction = Metal::mirror_reflect(_in_ray.direction, rec.normal).normalize()
             + Vec3::generate_rand_norm(-1.0, 1.0) * self.fuzz;
-        reflect_rate.x = self.albedo.x;
-        reflect_rate.y = self.albedo.y;
-        reflect_rate.z = self.albedo.z;
+        attenuation.x = self.albedo.x;
+        attenuation.y = self.albedo.y;
+        attenuation.z = self.albedo.z;
         scattered_ray.direction * rec.normal > 0.0
+    }
+}
+
+pub struct Dielectrics {
+    pub refractive_index: f64, // 折射率
+}
+impl Dielectrics {
+    pub fn refract(refraction_rate: f64, in_direction: Vec3, normal: Vec3) -> Vec3 {
+        let unit_in = in_direction.normalize();
+        let in_perpendicular = unit_in - normal * (unit_in * normal);
+        let out_perpendicular = in_perpendicular / refraction_rate;
+        let out_parallel = normal * (1.0 - out_perpendicular.length_squared()).sqrt() * -1.0;
+        out_parallel + out_perpendicular
+    }
+}
+impl Material for Dielectrics {
+    fn scatter(
+        &self,
+        _in_ray: &Ray,
+        scattered_ray: &mut Ray,
+        rec: &HitRecord,
+        attenuation: &mut Vec3,
+    ) -> bool {
+        attenuation.x = 1.0;
+        attenuation.y = 1.0;
+        attenuation.z = 1.0;
+        scattered_ray.origin = rec.hit_point;
+        // 目前假定在空气中
+        if rec.front_face {
+            scattered_ray.direction =
+                Dielectrics::refract(self.refractive_index / 1.0, _in_ray.direction, rec.normal);
+        } else {
+            scattered_ray.direction =
+                Dielectrics::refract(1.0 / self.refractive_index, _in_ray.direction, rec.normal);
+        }
+        true
     }
 }
