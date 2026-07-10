@@ -12,9 +12,9 @@ use std::sync::Arc;
 pub struct Camera {
     aspect_ration: f64,
     width: u32,
-    #[allow(dead_code)]
     samples_per_pixel: u32,
     max_depth: u32,
+    field_of_view: f64,
 }
 impl Camera {
     pub fn new(
@@ -22,17 +22,19 @@ impl Camera {
         width: u32,
         samples_per_pixel: u32,
         camera_max_depth: u32,
+        field_of_view: f64,
     ) -> Self {
         Self {
             aspect_ration,
             width,
             samples_per_pixel,
             max_depth: camera_max_depth,
+            field_of_view,
         }
     }
     pub fn render(&self, world: &HittableList) {
         // 保存路径
-        let path = std::path::Path::new("output/book1/image18.png");
+        let path = std::path::Path::new("output/book1/image19.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
@@ -41,7 +43,8 @@ impl Camera {
 
         let height = (self.width as f64 / self.aspect_ration) as u32;
 
-        let viewport_height = 2.0;
+        let viewport_height =
+            (self.field_of_view / 180.0 * std::f64::consts::PI / 2.0).tan() * f * 2.0;
         let viewport_width = viewport_height * (self.width as f64 / height as f64);
 
         let viewport_v = Vec3::new(0.0, -viewport_height, 0.0);
