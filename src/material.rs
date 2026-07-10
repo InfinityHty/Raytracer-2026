@@ -1,6 +1,7 @@
 use crate::hittable::*;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
+use rand::{RngExt, rng};
 pub trait Material {
     // bool 表示有无表面散射
     fn scatter(
@@ -73,6 +74,11 @@ impl Dielectrics {
         let out_parallel = normal * (1.0 - out_perpendicular.length_squared()).sqrt() * -1.0;
         out_parallel + out_perpendicular
     }
+    pub fn reflectance(cosine: f64, refraction: f64) -> f64 {
+        let mut r0 = (1.0 - refraction) / (1.0 + refraction);
+        r0 = r0 * r0;
+        r0 + (1.0 - r0) * (1.0 - cosine).powi(5)
+    }
 }
 impl Material for Dielectrics {
     fn scatter(
@@ -86,14 +92,20 @@ impl Material for Dielectrics {
         attenuation.y = 1.0;
         attenuation.z = 1.0;
         scattered_ray.origin = rec.hit_point;
-        // 目前假定在空气中
+
         let unit_in = _in_ray.direction.normalize();
         let sin_theta = (unit_in - rec.normal * (unit_in * rec.normal))
             .length_squared()
             .sqrt();
+        let cos_theta = (1.0 - sin_theta * sin_theta).sqrt();
+        let mut rng = rng();
+
         #[allow(clippy::collapsible_else_if)]
         if rec.front_face {
-            if sin_theta / self.refractive_index > 1.0 {
+            if sin_theta / self.refractive_index > 1.0
+                || Dielectrics::reflectance(cos_theta, 1.0 / self.refractive_index)
+                    > rng.random_range(0.0..1.0)
+            {
                 scattered_ray.direction = Metal::mirror_reflect(unit_in, rec.normal);
             } else {
                 scattered_ray.direction = Dielectrics::refract(
@@ -103,7 +115,10 @@ impl Material for Dielectrics {
                 );
             }
         } else {
-            if sin_theta * self.refractive_index > 1.0 {
+            if sin_theta * self.refractive_index > 1.0
+                || Dielectrics::reflectance(cos_theta, self.refractive_index)
+                    > rng.random_range(0.0..1.0)
+            {
                 scattered_ray.direction = Metal::mirror_reflect(unit_in, rec.normal);
             } else {
                 scattered_ray.direction = Dielectrics::refract(

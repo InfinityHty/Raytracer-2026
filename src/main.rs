@@ -26,7 +26,10 @@ fn main() {
         albedo: Vec3::new(0.1, 0.2, 0.5),
     });
     let material_left = Arc::new(Dielectrics {
-        refractive_index: 1.00 / 1.33,
+        refractive_index: 1.50,
+    });
+    let material_bubble = Arc::new(Dielectrics {
+        refractive_index: 1.00 / 1.50,
     });
     let material_right = Arc::new(Metal {
         albedo: Vec3::new(0.8, 0.6, 0.2),
@@ -38,10 +41,12 @@ fn main() {
     let sphere_1 = Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0, material_ground);
     let sphere_2 = Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.5, material_left);
     let sphere_3 = Sphere::new(Vec3::new(1.0, 0.0, -1.0), 0.5, material_right);
+    let bubble = Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.4, material_bubble);
     world.add(&sphere_0); // 中央球体
     world.add(&sphere_1); // 地面
-    world.add(&sphere_2); // 左边的金属球
+    world.add(&sphere_2); // 左边的玻璃球
     world.add(&sphere_3); // 右边的金属球
+    world.add(&bubble); // 玻璃球里的空气泡
     // 渲染图片
     camera.render(&world);
 }
