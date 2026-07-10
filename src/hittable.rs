@@ -59,3 +59,4 @@ impl Hittable for Sphere {
         true
     }
 }
+// 法线方向始终和光线反向

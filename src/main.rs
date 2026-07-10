@@ -26,7 +26,7 @@ fn main() {
         albedo: Vec3::new(0.1, 0.2, 0.5),
     });
     let material_left = Arc::new(Dielectrics {
-        refractive_index: 1.50,
+        refractive_index: 1.00 / 1.33,
     });
     let material_right = Arc::new(Metal {
         albedo: Vec3::new(0.8, 0.6, 0.2),
