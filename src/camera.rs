@@ -75,7 +75,8 @@ impl Camera {
         let upper_left = self.look_from - w * self.focus_dist - viewport_u / 2.0 - viewport_v / 2.0;
         let pixel_00 = upper_left + pixel_u * 0.5 + pixel_v * 0.5;
 
-        let defocus_radius = (self.defocus_angle / 180.0 * std::f64::consts::PI / 2.0).tan() * self.focus_dist;
+        let defocus_radius =
+            (self.defocus_angle / 180.0 * std::f64::consts::PI / 2.0).tan() * self.focus_dist;
         let defocus_disk_u = u * defocus_radius;
         let defocus_disk_v = v * defocus_radius;
 
@@ -94,7 +95,14 @@ impl Camera {
 
                 let mut pixel_color = Vec3::new(0.0, 0.0, 0.0);
                 for _sample_times in 0..self.samples_per_pixel {
-                    let ray = Camera::get_ray(pixel_ij, &self.look_from, pixel_u, pixel_v,defocus_disk_u,defocus_disk_v);
+                    let ray = Camera::get_ray(
+                        pixel_ij,
+                        &self.look_from,
+                        pixel_u,
+                        pixel_v,
+                        defocus_disk_u,
+                        defocus_disk_v,
+                    );
                     pixel_color = pixel_color + Camera::ray_color(&ray, world, self.max_depth);
                 }
                 pixel_color = pixel_color / self.samples_per_pixel as f64;
@@ -160,12 +168,19 @@ impl Camera {
             Vec3::new(1.0, 1.0, 1.0) * (1.0 - a) + Vec3::new(0.5, 0.7, 1.0) * a
         }
     }
-    fn get_ray(pixel_center: Vec3, eye_point: &Vec3, delta_u: Vec3, delta_v: Vec3,defocus_disk_u: Vec3, defocus_disk_v: Vec3) -> Ray {
+    fn get_ray(
+        pixel_center: Vec3,
+        eye_point: &Vec3,
+        delta_u: Vec3,
+        delta_v: Vec3,
+        defocus_disk_u: Vec3,
+        defocus_disk_v: Vec3,
+    ) -> Ray {
         // 一定范围内随机采样
         let pixel_sample =
             pixel_center + delta_u * Camera::random(0.5) + delta_v * Camera::random(0.5);
         let mut origin = Vec3::new(eye_point.x, eye_point.y, eye_point.z);
-        let defocus_vec = Vec3::generate_rand_unit_disk(-1.0,1.0);
+        let defocus_vec = Vec3::generate_rand_unit_disk(-1.0, 1.0);
         origin = origin + defocus_disk_u * defocus_vec.x + defocus_disk_v * defocus_vec.y;
         let direction = pixel_sample - origin;
         Ray::new(origin, direction)
