@@ -25,6 +25,18 @@ impl Vec3 {
             }
         }
     }
+    pub fn generate_rand_unit_disk(min: f64, max: f64) -> Vec3 {
+        let mut rng = rng();
+        loop{
+            let x = rng.random_range(min..max);
+            let y = rng.random_range(min..max);
+            let vec = Vec3::new(x, y, 0.0);
+            let sq = vec.length_squared();
+            if sq <= 1.0{
+                return vec
+            }
+        }
+    }
     pub fn near_zero(&self) -> bool {
         const EPSILON: f64 = 1e-8;
         if self.x.abs() < EPSILON && self.y.abs() < EPSILON && self.z.abs() < EPSILON {

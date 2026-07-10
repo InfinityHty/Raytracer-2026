@@ -18,6 +18,8 @@ fn main() {
     let samples_per_pixel = 100;
     let camera_max_depth = 50;
     let field_of_view = 20.0;
+    let defoucs_angle = 10.0;
+    let focus_dist = 3.4;
 
     let look_from = Vec3::new(-2.0, 2.0, 1.0);
     let look_at = Vec3::new(0.0, 0.0, -1.0);
@@ -31,6 +33,8 @@ fn main() {
         look_from,
         look_at,
         view_up,
+        defoucs_angle,
+        focus_dist,
     );
     // 定义材质
     let material_ground = Arc::new(Lambertian {
