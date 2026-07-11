@@ -8,7 +8,7 @@ use console::style; // 给控制台打印的文字加颜色、加粗等样式
 use image::{ImageBuffer, RgbImage}; // Rust最主流的图像处理库 创建画布 逐像素绘制光线追踪结果 导出文件图片
 use indicatif::ProgressBar; // 进度条可视化
 use rand::{RngExt, rng};
-use std::sync::Arc;
+use std::rc::Rc;
 pub struct Camera {
     aspect_ration: f64,
     width: u32,
@@ -136,7 +136,7 @@ impl Camera {
             normal: Vec3::new(0.0, 0.0, 0.0),
             t: 0.0,
             front_face: true,
-            material: Arc::new(Lambertian {
+            material: Rc::new(Lambertian {
                 albedo: Vec3::new(0.0, 0.0, 0.0),
             }),
         };

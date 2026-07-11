@@ -2,13 +2,13 @@ use crate::interval::Interval;
 use crate::material::Material;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
-use std::sync::Arc;
+use std::rc::Rc;
 pub struct HitRecord {
     pub hit_point: Vec3,
     pub normal: Vec3,
     pub t: f64,
-    pub front_face: bool,            // 是否是外表面
-    pub material: Arc<dyn Material>, // 持有材质的原子指针
+    pub front_face: bool,           // 是否是外表面
+    pub material: Rc<dyn Material>, // 持有材质的指针
 }
 // 一个可撞击的trait（类比抽象类）
 pub trait Hittable {
@@ -17,10 +17,10 @@ pub trait Hittable {
 pub struct Sphere {
     center: Vec3,
     radius: f64,
-    material: Arc<dyn Material>, // 如何初始化？
+    material: Rc<dyn Material>, // 如何初始化？
 }
 impl Sphere {
-    pub fn new(center: Vec3, radius: f64, material: Arc<dyn Material>) -> Sphere {
+    pub fn new(center: Vec3, radius: f64, material: Rc<dyn Material>) -> Sphere {
         Sphere {
             center,
             radius,
@@ -55,7 +55,7 @@ impl Hittable for Sphere {
             rec.normal = outward_normal * (-1.0);
             rec.front_face = false;
         }
-        rec.material = Arc::clone(&self.material);
+        rec.material = Rc::clone(&self.material);
         true
     }
 }

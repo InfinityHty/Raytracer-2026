@@ -1,18 +1,18 @@
-use std::sync::Arc;
 use crate::hittable::*;
 use crate::interval::*;
 use crate::ray::*;
+use std::rc::Rc;
 use std::vec::Vec;
 // 场景里所有的objects
 // t_min,t_max用来找光线hit的最近的object
 pub struct HittableList {
-    objects: Vec<Arc<dyn Hittable>>,
+    objects: Vec<Rc<dyn Hittable>>,
 }
 impl HittableList {
     pub fn new() -> HittableList {
         HittableList { objects: vec![] }
     }
-    pub fn add(&mut self, object: Arc<dyn Hittable>) {
+    pub fn add(&mut self, object: Rc<dyn Hittable>) {
         self.objects.push(object);
     }
     #[allow(dead_code)]
