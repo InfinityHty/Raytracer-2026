@@ -17,7 +17,6 @@ impl Interval {
     pub fn surround(&self, t: f64) -> bool {
         self.min < t && t < self.max
     }
-    #[allow(dead_code)]
     pub fn clamp(&self, x: f64) -> f64 {
         if x < self.min {
             return self.min;

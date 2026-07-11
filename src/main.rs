@@ -11,18 +11,20 @@ mod material;
 use camera::*;
 use material::*;
 use std::sync::Arc;
+use rand::{RngExt, rng};
+use std::vec::Vec;
 fn main() {
     // 创建相机
     let aspect_ration = 16.0 / 9.0;
-    let width = 400;
-    let samples_per_pixel = 100;
+    let width = 1200;
+    let samples_per_pixel = 500;
     let camera_max_depth = 50;
     let field_of_view = 20.0;
-    let defoucs_angle = 10.0;
-    let focus_dist = 3.4;
+    let defocus_angle = 0.6;
+    let focus_dist = 10.0;
 
-    let look_from = Vec3::new(-2.0, 2.0, 1.0);
-    let look_at = Vec3::new(0.0, 0.0, -1.0);
+    let look_from = Vec3::new(13.0, 2.0, 3.0);
+    let look_at = Vec3::new(0.0, 0.0, 0.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
     let camera = Camera::new(
         aspect_ration,
@@ -33,38 +35,57 @@ fn main() {
         look_from,
         look_at,
         view_up,
-        defoucs_angle,
+        defocus_angle,
         focus_dist,
     );
     // 定义材质
     let material_ground = Arc::new(Lambertian {
-        albedo: Vec3::new(0.8, 0.8, 0.0),
-    });
-    let material_center = Arc::new(Lambertian {
-        albedo: Vec3::new(0.1, 0.2, 0.5),
-    });
-    let material_left = Arc::new(Dielectrics {
-        refractive_index: 1.5,
-    });
-    let material_right = Arc::new(Metal {
-        albedo: Vec3::new(0.8, 0.6, 0.2),
-        fuzz: 1.0,
-    });
-    let material_bubble = Arc::new(Dielectrics {
-        refractive_index: 1.0 / 1.5,
+        albedo: Vec3::new(0.5, 0.5, 0.5),
     });
     // 创建世界
     let mut world = HittableList::new();
-    let sphere0 = Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0, material_ground);
-    let sphere1 = Sphere::new(Vec3::new(0.0, 0.0, -1.2), 0.5, material_center);
-    let sphere2 = Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.5, material_left);
-    let sphere3 = Sphere::new(Vec3::new(1.0, 0.0, -1.0), 0.5, material_right);
-    let bubble = Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.4, material_bubble);
-    world.add(&sphere0);
-    world.add(&sphere1);
-    world.add(&sphere2);
-    world.add(&sphere3);
-    world.add(&bubble);
+    let ground = Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, material_ground));
+    world.add(ground);
+    let mut rng = rng();
+    let mut sphere_list: Vec<Sphere> = vec![];
+    for a in -11..11 {
+        for b in -11..11 {
+            let decide_material = rng.random_range(0.0..1.0);
+            let center = Vec3::new(a as f64 + 0.9 * rng.random_range(0.0..1.0),0.2,b as f64 + 0.9 * rng.random_range(0.0..1.0));
+            if (center - Vec3::new(4.0,0.2,0.0)).length_squared().sqrt() > 0.9 {
+                if decide_material < 0.8 {
+                    // diffuse
+                    let albedo = Vec3::new(rng.random_range(0.0..1.0) * rng.random_range(0.0..1.0),rng.random_range(0.0..1.0) * rng.random_range(0.0..1.0),rng.random_range(0.0..1.0) * rng.random_range(0.0..1.0));
+                    let material = Arc::new(Lambertian { albedo });
+                    let sphere = Arc::new(Sphere::new(center, 0.2, material));
+                    world.add(sphere);
+                }
+                else if decide_material < 0.95 {
+                    // metal
+                    let albedo = Vec3::new(rng.random_range(0.5..1.0),rng.random_range(0.5..1.0),rng.random_range(0.5..1.0));
+                    let fuzz = rng.random_range(0.0..0.5);
+                    let material = Arc::new(Metal { albedo, fuzz});
+                    let sphere = Arc::new(Sphere::new(center, 0.2, material));
+                    world.add(sphere);
+                }
+                else{
+                    // glass
+                    let material = Arc::new(Dielectrics { refractive_index: 1.5 });
+                    let sphere = Arc::new(Sphere::new(center, 0.2, material));
+                    world.add(sphere);
+                }
+            }
+        }
+    }
+    let material1 = Arc::new(Dielectrics { refractive_index: 1.5 });
+    let sphere1 = Arc::new(Sphere::new(Vec3::new(0.0, 1.0, 0.0), 1.0, material1));
+    world.add(sphere1);
+    let material2 = Arc::new(Lambertian { albedo: Vec3::new(0.4, 0.2, 0.1) });
+    let sphere2 = Arc::new(Sphere::new(Vec3::new(-4.0, 1.0, 0.0), 1.0, material2));
+    world.add(sphere2);
+    let material3 = Arc::new(Metal { albedo: Vec3::new(0.7, 0.6, 0.5), fuzz: 0.0 });
+    let sphere3 = Arc::new(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, material3));
+    world.add(sphere3);
     // 渲染图片
     camera.render(&world);
 }
