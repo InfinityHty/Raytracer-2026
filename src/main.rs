@@ -3,6 +3,7 @@ use vec3::Vec3;
 mod hittable;
 mod ray;
 use hittable::*;
+use ray::Ray;
 mod hittable_list;
 use hittable_list::*;
 mod camera;
@@ -15,7 +16,7 @@ use std::rc::Rc;
 fn main() {
     // 创建相机
     let aspect_ration = 16.0 / 9.0;
-    let width = 1200;
+    let width = 400;
     let samples_per_pixel = 100;
     let camera_max_depth = 50;
     let field_of_view = 20.0;
@@ -67,8 +68,10 @@ fn main() {
                         rng.random_range(0.0..1.0) * rng.random_range(0.0..1.0),
                     );
                     let material = Rc::new(Lambertian { albedo });
-                    let sphere = Rc::new(Sphere::new(center, 0.2, material));
-                    world.add(sphere);
+                    let route = Vec3::new(0.0, rng.random_range(0.0..0.5), 0.0);
+                    let moving_route = Ray::new(center, route, 0.0);
+                    let moving_sphere = Rc::new(MovingSphere::new(moving_route, 0.2, material));
+                    world.add(moving_sphere);
                 } else if decide_material < 0.95 {
                     // metal
                     let albedo = Vec3::new(

@@ -6,7 +6,7 @@ pub trait Material {
     // bool 表示有无表面散射
     fn scatter(
         &self,
-        _in_ray: &Ray,
+        in_ray: &Ray,
         scattered_ray: &mut Ray,
         rec: &HitRecord,
         attenuation: &mut Vec3, // 衰减
@@ -19,7 +19,7 @@ pub struct Lambertian {
 impl Material for Lambertian {
     fn scatter(
         &self,
-        _in_ray: &Ray,
+        in_ray: &Ray,
         scattered_ray: &mut Ray,
         rec: &HitRecord,
         attenuation: &mut Vec3,
@@ -32,6 +32,7 @@ impl Material for Lambertian {
         attenuation.x = self.albedo.x;
         attenuation.y = self.albedo.y;
         attenuation.z = self.albedo.z;
+        scattered_ray.time = in_ray.time;
         true
     }
 }
@@ -48,17 +49,18 @@ impl Metal {
 impl Material for Metal {
     fn scatter(
         &self,
-        _in_ray: &Ray,
+        in_ray: &Ray,
         scattered_ray: &mut Ray,
         rec: &HitRecord,
         attenuation: &mut Vec3,
     ) -> bool {
         scattered_ray.origin = rec.hit_point;
-        scattered_ray.direction = Metal::mirror_reflect(_in_ray.direction, rec.normal).normalize()
+        scattered_ray.direction = Metal::mirror_reflect(in_ray.direction, rec.normal).normalize()
             + Vec3::generate_rand_norm(-1.0, 1.0) * self.fuzz;
         attenuation.x = self.albedo.x;
         attenuation.y = self.albedo.y;
         attenuation.z = self.albedo.z;
+        scattered_ray.time = in_ray.time;
         scattered_ray.direction * rec.normal > 0.0
     }
 }
@@ -83,7 +85,7 @@ impl Dielectrics {
 impl Material for Dielectrics {
     fn scatter(
         &self,
-        _in_ray: &Ray,
+        in_ray: &Ray,
         scattered_ray: &mut Ray,
         rec: &HitRecord,
         attenuation: &mut Vec3,
@@ -93,7 +95,7 @@ impl Material for Dielectrics {
         attenuation.z = 1.0;
         scattered_ray.origin = rec.hit_point;
 
-        let unit_in = _in_ray.direction.normalize();
+        let unit_in = in_ray.direction.normalize();
         let sin_theta = (unit_in - rec.normal * (unit_in * rec.normal))
             .length_squared()
             .sqrt();
@@ -108,11 +110,8 @@ impl Material for Dielectrics {
             {
                 scattered_ray.direction = Metal::mirror_reflect(unit_in, rec.normal);
             } else {
-                scattered_ray.direction = Dielectrics::refract(
-                    self.refractive_index / 1.0,
-                    _in_ray.direction,
-                    rec.normal,
-                );
+                scattered_ray.direction =
+                    Dielectrics::refract(self.refractive_index / 1.0, in_ray.direction, rec.normal);
             }
         } else {
             if sin_theta * self.refractive_index > 1.0
@@ -121,13 +120,11 @@ impl Material for Dielectrics {
             {
                 scattered_ray.direction = Metal::mirror_reflect(unit_in, rec.normal);
             } else {
-                scattered_ray.direction = Dielectrics::refract(
-                    1.0 / self.refractive_index,
-                    _in_ray.direction,
-                    rec.normal,
-                );
+                scattered_ray.direction =
+                    Dielectrics::refract(1.0 / self.refractive_index, in_ray.direction, rec.normal);
             }
         }
+        scattered_ray.time = in_ray.time;
         true
     }
 }

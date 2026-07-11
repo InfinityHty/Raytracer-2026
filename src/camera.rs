@@ -50,7 +50,7 @@ impl Camera {
     }
     pub fn render(&self, world: &HittableList) {
         // 保存路径
-        let path = std::path::Path::new("output/book1/image23.png");
+        let path = std::path::Path::new("output/book2/image1.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
@@ -144,7 +144,7 @@ impl Camera {
         let flag = world.hit(ray, &interval, &mut rec);
         if flag {
             let mut scattered_ray: Ray =
-                Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0));
+                Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0), 0.0);
             let mut reflect_rate = Vec3::new(0.0, 0.0, 0.0);
             if rec
                 .material
@@ -183,7 +183,8 @@ impl Camera {
         let defocus_vec = Vec3::generate_rand_unit_disk(-1.0, 1.0);
         origin = origin + defocus_disk_u * defocus_vec.x + defocus_disk_v * defocus_vec.y;
         let direction = pixel_sample - origin;
-        Ray::new(origin, direction)
+        let time = Camera::random(0.5) + 0.5;
+        Ray::new(origin, direction, time)
     }
     fn random(range: f64) -> f64 {
         let mut rng = rng();

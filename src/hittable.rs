@@ -17,7 +17,7 @@ pub trait Hittable {
 pub struct Sphere {
     center: Vec3,
     radius: f64,
-    material: Rc<dyn Material>, // 如何初始化？
+    material: Rc<dyn Material>,
 }
 impl Sphere {
     pub fn new(center: Vec3, radius: f64, material: Rc<dyn Material>) -> Sphere {
@@ -48,7 +48,7 @@ impl Hittable for Sphere {
         rec.t = rt;
         rec.hit_point = ray.at(rec.t);
         let outward_normal = (rec.hit_point - self.center) / self.radius;
-        if outward_normal * ray.direction() < 0.0 {
+        if outward_normal * ray.direction < 0.0 {
             rec.normal = outward_normal;
             rec.front_face = true;
         } else {
@@ -60,3 +60,49 @@ impl Hittable for Sphere {
     }
 }
 // 法线方向始终和光线反向
+pub struct MovingSphere {
+    pub center: Ray,
+    pub radius: f64,
+    pub material: Rc<dyn Material>,
+}
+impl MovingSphere {
+    pub fn new(center: Ray, radius: f64, material: Rc<dyn Material>) -> MovingSphere {
+        MovingSphere {
+            center,
+            radius,
+            material,
+        }
+    }
+}
+impl Hittable for MovingSphere {
+    fn hit(&self, ray: &Ray, ray_t: &Interval, rec: &mut HitRecord) -> bool {
+        let current_center = self.center.origin + self.center.direction * ray.time;
+
+        let a = ray.direction().length_squared();
+        let h = ray.direction() * (current_center - ray.ori());
+        let c = (current_center - ray.ori()).length_squared() - self.radius * self.radius;
+        if h * h - a * c < 0.0 {
+            return false;
+        }
+        let det = (h * h - a * c).sqrt();
+        let mut rt = (h - det) / a;
+        if !ray_t.surround(rt) {
+            rt = (h + det) / a;
+            if !ray_t.surround(rt) {
+                return false;
+            }
+        }
+        rec.t = rt;
+        rec.hit_point = ray.at(rec.t);
+        let outward_normal = (rec.hit_point - current_center) / self.radius;
+        if outward_normal * ray.direction() < 0.0 {
+            rec.normal = outward_normal;
+            rec.front_face = true;
+        } else {
+            rec.normal = outward_normal * (-1.0);
+            rec.front_face = false;
+        }
+        rec.material = Rc::clone(&self.material);
+        true
+    }
+}
