@@ -19,9 +19,7 @@ use std::path::Path;
 use std::rc::Rc;
 use texture::*;
 fn main() {
-    let img_path = Path::new(
-        "texture_images/earthmap.jpg",
-    );
+    let img_path = Path::new("texture_images/earthmap.jpg");
     let img = ImageReader::open(img_path)
         .expect("文件不存在")
         .decode()
