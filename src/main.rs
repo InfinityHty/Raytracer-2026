@@ -17,6 +17,44 @@ use rand::{RngExt, rng};
 use std::rc::Rc;
 use texture::*;
 fn main() {
+    // bouncing_spheres();
+    let aspect_ration = 16.0 / 9.0;
+    let width = 400;
+    let samples_per_pixel = 100;
+    let camera_max_depth = 50;
+    let field_of_view = 20.0;
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+    let look_from = Vec3::new(13.0, 2.0, 3.0);
+    let look_at = Vec3::new(0.0, 0.0, 0.0);
+    let view_up = Vec3::new(0.0, 1.0, 0.0);
+    let camera = Camera::new(
+        aspect_ration,
+        width,
+        samples_per_pixel,
+        camera_max_depth,
+        field_of_view,
+        look_from,
+        look_at,
+        view_up,
+        defocus_angle,
+        focus_dist,
+    );
+    let mut world = HittableList::new();
+    let texture_odd = Rc::new(SolidColor::new(Vec3::new(0.2, 0.3, 0.1)));
+    let texture_even = Rc::new(SolidColor::new(Vec3::new(0.9, 0.9, 0.9)));
+    let checker1 = Rc::new(Lambertian {
+        texture: Rc::new(CheckeredTexture::new(texture_odd, texture_even, 0.32)),
+    });
+    let checker2 = checker1.clone();
+    let sphere1 = Rc::new(Sphere::new(Vec3::new(0.0, -10.0, 0.0), 10.0, checker1));
+    let sphere2 = Rc::new(Sphere::new(Vec3::new(0.0, 10.0, 0.0), 10.0, checker2));
+    world.add(sphere1);
+    world.add(sphere2);
+    camera.render(&world);
+}
+#[allow(dead_code)]
+fn bouncing_spheres() {
     // 创建相机
     let aspect_ration = 16.0 / 9.0;
     let width = 400;
