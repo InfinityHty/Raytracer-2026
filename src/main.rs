@@ -20,7 +20,7 @@ use std::rc::Rc;
 use texture::*;
 fn main() {
     let img_path = Path::new(
-        "C:\\Users\\HTY\\Desktop\\大一暑假\\Raytracer-2026\\texture_images\\earthmap.jpg",
+        "texture_images/earthmap.jpg",
     );
     let img = ImageReader::open(img_path)
         .expect("文件不存在")
