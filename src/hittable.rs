@@ -40,6 +40,15 @@ impl Sphere {
             ),
         }
     }
+    pub fn get_sphere_uv(&self, point: &Vec3) -> (f64, f64) {
+        let theta = (-point.y / self.radius).acos();
+        let phi = (-point.z).atan2(point.x) + std::f64::consts::PI;
+        (
+            phi / 2.0 / std::f64::consts::PI,
+            theta / std::f64::consts::PI,
+        )
+    }
+    // u,v: [0,1] 对应 phi theta
 }
 impl Hittable for Sphere {
     // t在某个范围内才能成功hit (t_min,t_max)
@@ -68,6 +77,7 @@ impl Hittable for Sphere {
             rec.normal = outward_normal * (-1.0);
             rec.front_face = false;
         }
+        (rec.u, rec.v) = self.get_sphere_uv(&rec.hit_point);
         rec.material = Rc::clone(&self.material);
         true
     }

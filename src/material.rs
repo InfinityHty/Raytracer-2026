@@ -31,9 +31,9 @@ impl Material for Lambertian {
             scattered_ray.direction = rec.normal;
         }
         scattered_ray.origin = Vec3::new(rec.hit_point.x, rec.hit_point.y, rec.hit_point.z);
-        attenuation.x = self.texture.value(rec.u, rec.v, rec.hit_point).x;
-        attenuation.y = self.texture.value(rec.u, rec.v, rec.hit_point).y;
-        attenuation.z = self.texture.value(rec.u, rec.v, rec.hit_point).z;
+        attenuation.x = self.texture.value(rec.u, rec.v, &rec.hit_point).x;
+        attenuation.y = self.texture.value(rec.u, rec.v, &rec.hit_point).y;
+        attenuation.z = self.texture.value(rec.u, rec.v, &rec.hit_point).z;
         scattered_ray.time = in_ray.time;
         true
     }

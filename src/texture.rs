@@ -1,7 +1,8 @@
 use crate::vec3::Vec3;
+use image::{DynamicImage, GenericImageView};
 use std::rc::Rc;
 pub trait Texture {
-    fn value(&self, u: f64, v: f64, point: Vec3) -> Vec3;
+    fn value(&self, u: f64, v: f64, point: &Vec3) -> Vec3;
 }
 pub struct SolidColor {
     albedo: Vec3,
@@ -13,7 +14,7 @@ impl SolidColor {
 }
 impl Texture for SolidColor {
     #[allow(unused_variables)]
-    fn value(&self, u: f64, v: f64, point: Vec3) -> Vec3 {
+    fn value(&self, u: f64, v: f64, point: &Vec3) -> Vec3 {
         self.albedo
     }
 }
@@ -29,7 +30,7 @@ impl CheckeredTexture {
 }
 impl Texture for CheckeredTexture {
     #[allow(unused_variables)]
-    fn value(&self, u: f64, v: f64, point: Vec3) -> Vec3 {
+    fn value(&self, u: f64, v: f64, point: &Vec3) -> Vec3 {
         let pos_x = (point.x * 1.0 / self.scale).floor() as i32;
         let pos_y = (point.y * 1.0 / self.scale).floor() as i32;
         let pos_z = (point.z * 1.0 / self.scale).floor() as i32;
@@ -39,5 +40,29 @@ impl Texture for CheckeredTexture {
         } else {
             self.odd.value(u, v, point)
         }
+    }
+}
+pub struct ImageTexture {
+    image: DynamicImage,
+}
+impl ImageTexture {
+    pub fn new(image: image::DynamicImage) -> ImageTexture {
+        ImageTexture { image }
+    }
+}
+impl Texture for ImageTexture {
+    #[allow(unused_variables)]
+    fn value(&self, u: f64, v: f64, point: &Vec3) -> Vec3 {
+        let u = u.clamp(0.0, 1.0);
+        let v = 1.0 - v.clamp(0.0, 1.0);
+
+        let i = (u * self.image.width() as f64) as u32;
+        let j = (v * self.image.height() as f64) as u32;
+        let pixel = self.image.get_pixel(i, j);
+        Vec3::new(
+            pixel[0] as f64 / 255.0,
+            pixel[1] as f64 / 255.0,
+            pixel[2] as f64 / 255.0,
+        )
     }
 }

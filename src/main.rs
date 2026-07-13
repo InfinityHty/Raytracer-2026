@@ -12,20 +12,29 @@ mod interval;
 mod material;
 mod texture;
 use camera::*;
+use image::ImageReader;
 use material::*;
 use rand::{RngExt, rng};
+use std::path::Path;
 use std::rc::Rc;
 use texture::*;
 fn main() {
-    // bouncing_spheres();
+    let img_path = Path::new(
+        "C:\\Users\\HTY\\Desktop\\大一暑假\\Raytracer-2026\\texture_images\\earthmap.jpg",
+    );
+    let img = ImageReader::open(img_path)
+        .expect("文件不存在")
+        .decode()
+        .expect("图片解码失败");
+
     let aspect_ration = 16.0 / 9.0;
-    let width = 400;
+    let width = img.width();
     let samples_per_pixel = 100;
     let camera_max_depth = 50;
     let field_of_view = 20.0;
     let defocus_angle = 0.0;
     let focus_dist = 10.0;
-    let look_from = Vec3::new(13.0, 2.0, 3.0);
+    let look_from = Vec3::new(0.0, 0.0, 12.0);
     let look_at = Vec3::new(0.0, 0.0, 0.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
     let camera = Camera::new(
@@ -41,16 +50,12 @@ fn main() {
         focus_dist,
     );
     let mut world = HittableList::new();
-    let texture_odd = Rc::new(SolidColor::new(Vec3::new(0.2, 0.3, 0.1)));
-    let texture_even = Rc::new(SolidColor::new(Vec3::new(0.9, 0.9, 0.9)));
-    let checker1 = Rc::new(Lambertian {
-        texture: Rc::new(CheckeredTexture::new(texture_odd, texture_even, 0.32)),
+    let earth_texture = Rc::new(ImageTexture::new(img));
+    let earth_surface = Rc::new(Lambertian {
+        texture: earth_texture,
     });
-    let checker2 = checker1.clone();
-    let sphere1 = Rc::new(Sphere::new(Vec3::new(0.0, -10.0, 0.0), 10.0, checker1));
-    let sphere2 = Rc::new(Sphere::new(Vec3::new(0.0, 10.0, 0.0), 10.0, checker2));
-    world.add(sphere1);
-    world.add(sphere2);
+    let earth = Rc::new(Sphere::new(Vec3::new(0.0, 0.0, 0.0), 2.0, earth_surface));
+    world.add(earth);
     camera.render(&world);
 }
 #[allow(dead_code)]
