@@ -10,7 +10,9 @@ mod axis_aligned_bounding_boxes;
 mod camera;
 mod interval;
 mod material;
+mod perlin;
 mod texture;
+use crate::perlin::PerlinNoise;
 use camera::*;
 use image::ImageReader;
 use material::*;
@@ -18,21 +20,16 @@ use rand::{RngExt, rng};
 use std::path::Path;
 use std::rc::Rc;
 use texture::*;
-fn main() {
-    let img_path = Path::new("texture_images/earthmap.jpg");
-    let img = ImageReader::open(img_path)
-        .expect("文件不存在")
-        .decode()
-        .expect("图片解码失败");
 
+fn main() {
     let aspect_ration = 16.0 / 9.0;
-    let width = img.width();
+    let width = 400;
     let samples_per_pixel = 100;
     let camera_max_depth = 50;
     let field_of_view = 20.0;
     let defocus_angle = 0.0;
     let focus_dist = 10.0;
-    let look_from = Vec3::new(0.0, 0.0, 12.0);
+    let look_from = Vec3::new(13.0, 2.0, 3.0);
     let look_at = Vec3::new(0.0, 0.0, 0.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
     let camera = Camera::new(
@@ -48,12 +45,19 @@ fn main() {
         focus_dist,
     );
     let mut world = HittableList::new();
-    let earth_texture = Rc::new(ImageTexture::new(img));
-    let earth_surface = Rc::new(Lambertian {
-        texture: earth_texture,
+    let texture_perlin = Rc::new(Lambertian {
+        texture: Rc::new(NoiseTexture {
+            noise: PerlinNoise::new(),
+        }),
     });
-    let earth = Rc::new(Sphere::new(Vec3::new(0.0, 0.0, 0.0), 2.0, earth_surface));
-    world.add(earth);
+    let ground = Rc::new(Sphere::new(
+        Vec3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        texture_perlin.clone(),
+    ));
+    let sphere = Rc::new(Sphere::new(Vec3::new(0.0, 2.0, 0.0), 2.0, texture_perlin));
+    world.add(ground);
+    world.add(sphere);
     camera.render(&world);
 }
 #[allow(dead_code)]
@@ -162,5 +166,81 @@ fn bouncing_spheres() {
     let cnt = world.objects.len();
     bvh_world.add(Rc::new(BvhNode::new(&mut world.objects, 0, cnt)));
     // 渲染图片
+    camera.render(&world);
+}
+#[allow(dead_code)]
+fn checker_spheres() {
+    let aspect_ration = 16.0 / 9.0;
+    let width = 400;
+    let samples_per_pixel = 100;
+    let camera_max_depth = 50;
+    let field_of_view = 20.0;
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+    let look_from = Vec3::new(13.0, 2.0, 3.0);
+    let look_at = Vec3::new(0.0, 0.0, 0.0);
+    let view_up = Vec3::new(0.0, 1.0, 0.0);
+    let camera = Camera::new(
+        aspect_ration,
+        width,
+        samples_per_pixel,
+        camera_max_depth,
+        field_of_view,
+        look_from,
+        look_at,
+        view_up,
+        defocus_angle,
+        focus_dist,
+    );
+    let mut world = HittableList::new();
+    let texture_odd = Rc::new(SolidColor::new(Vec3::new(0.2, 0.3, 0.1)));
+    let texture_even = Rc::new(SolidColor::new(Vec3::new(0.9, 0.9, 0.9)));
+    let checker1 = Rc::new(Lambertian {
+        texture: Rc::new(CheckeredTexture::new(texture_odd, texture_even, 0.32)),
+    });
+    let checker2 = checker1.clone();
+    let sphere1 = Rc::new(Sphere::new(Vec3::new(0.0, -10.0, 0.0), 10.0, checker1));
+    let sphere2 = Rc::new(Sphere::new(Vec3::new(0.0, 10.0, 0.0), 10.0, checker2));
+    world.add(sphere1);
+    world.add(sphere2);
+    camera.render(&world);
+}
+#[allow(dead_code)]
+fn earth() {
+    let img_path = Path::new("texture_images/earthmap.jpg");
+    let img = ImageReader::open(img_path)
+        .expect("文件不存在")
+        .decode()
+        .expect("图片解码失败");
+
+    let aspect_ration = 16.0 / 9.0;
+    let width = img.width();
+    let samples_per_pixel = 100;
+    let camera_max_depth = 50;
+    let field_of_view = 20.0;
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+    let look_from = Vec3::new(0.0, 0.0, 12.0);
+    let look_at = Vec3::new(0.0, 0.0, 0.0);
+    let view_up = Vec3::new(0.0, 1.0, 0.0);
+    let camera = Camera::new(
+        aspect_ration,
+        width,
+        samples_per_pixel,
+        camera_max_depth,
+        field_of_view,
+        look_from,
+        look_at,
+        view_up,
+        defocus_angle,
+        focus_dist,
+    );
+    let mut world = HittableList::new();
+    let earth_texture = Rc::new(ImageTexture::new(img));
+    let earth_surface = Rc::new(Lambertian {
+        texture: earth_texture,
+    });
+    let earth = Rc::new(Sphere::new(Vec3::new(0.0, 0.0, 0.0), 2.0, earth_surface));
+    world.add(earth);
     camera.render(&world);
 }

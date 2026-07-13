@@ -1,3 +1,4 @@
+use crate::perlin::PerlinNoise;
 use crate::vec3::Vec3;
 use image::{DynamicImage, GenericImageView};
 use std::rc::Rc;
@@ -64,5 +65,14 @@ impl Texture for ImageTexture {
             pixel[1] as f64 / 255.0,
             pixel[2] as f64 / 255.0,
         )
+    }
+}
+pub struct NoiseTexture {
+    pub noise: PerlinNoise,
+}
+impl Texture for NoiseTexture {
+    #[allow(unused_variables)]
+    fn value(&self, u: f64, v: f64, point: &Vec3) -> Vec3 {
+        Vec3::new(1.0, 1.0, 1.0) * self.noise.noise(point)
     }
 }
