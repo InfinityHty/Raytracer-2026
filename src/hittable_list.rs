@@ -1,3 +1,4 @@
+use crate::axis_aligned_bounding_boxes::AxisAlignedBoundingBox;
 use crate::hittable::*;
 use crate::interval::*;
 use crate::ray::*;
@@ -6,15 +7,28 @@ use std::vec::Vec;
 // 场景里所有的objects
 // t_min,t_max用来找光线hit的最近的object
 pub struct HittableList {
-    objects: Vec<Rc<dyn Hittable>>,
+    pub objects: Vec<Rc<dyn Hittable>>,
+    pub bounding_box: AxisAlignedBoundingBox,
 }
 impl HittableList {
     pub fn new() -> HittableList {
-        HittableList { objects: vec![] }
+        HittableList {
+            objects: vec![],
+            bounding_box: AxisAlignedBoundingBox::new(
+                Interval::new(0.0, 0.0),
+                Interval::new(0.0, 0.0),
+                Interval::new(0.0, 0.0),
+            ),
+        }
     }
     pub fn add(&mut self, object: Rc<dyn Hittable>) {
+        self.bounding_box =
+            AxisAlignedBoundingBox::merge(&self.bounding_box, object.get_bounding_box());
         self.objects.push(object);
     }
+    // pub fn get_bounding_box(&self) -> &AxisAlignedBoundingBox {
+    //     &self.bounding_box
+    // }
     #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.objects.clear();

@@ -6,13 +6,16 @@ use hittable::*;
 use ray::Ray;
 mod hittable_list;
 use hittable_list::*;
+mod axis_aligned_bounding_boxes;
 mod camera;
 mod interval;
 mod material;
+mod texture;
 use camera::*;
 use material::*;
 use rand::{RngExt, rng};
 use std::rc::Rc;
+use texture::*;
 fn main() {
     // 创建相机
     let aspect_ration = 16.0 / 9.0;
@@ -39,8 +42,10 @@ fn main() {
         focus_dist,
     );
     // 定义材质
+    let texture_odd = Rc::new(SolidColor::new(Vec3::new(0.2, 0.3, 0.1)));
+    let texture_even = Rc::new(SolidColor::new(Vec3::new(0.9, 0.9, 0.9)));
     let material_ground = Rc::new(Lambertian {
-        albedo: Vec3::new(0.5, 0.5, 0.5),
+        texture: Rc::new(CheckeredTexture::new(texture_odd, texture_even, 0.32)),
     });
     // 创建世界
     let mut world = HittableList::new();
@@ -67,7 +72,9 @@ fn main() {
                         rng.random_range(0.0..1.0) * rng.random_range(0.0..1.0),
                         rng.random_range(0.0..1.0) * rng.random_range(0.0..1.0),
                     );
-                    let material = Rc::new(Lambertian { albedo });
+                    let material = Rc::new(Lambertian {
+                        texture: Rc::new(SolidColor::new(albedo)),
+                    });
                     let route = Vec3::new(0.0, rng.random_range(0.0..0.5), 0.0);
                     let moving_route = Ray::new(center, route, 0.0);
                     let moving_sphere = Rc::new(MovingSphere::new(moving_route, 0.2, material));
@@ -100,7 +107,7 @@ fn main() {
     let sphere1 = Rc::new(Sphere::new(Vec3::new(0.0, 1.0, 0.0), 1.0, material1));
     world.add(sphere1);
     let material2 = Rc::new(Lambertian {
-        albedo: Vec3::new(0.4, 0.2, 0.1),
+        texture: Rc::new(SolidColor::new(Vec3::new(0.4, 0.2, 0.1))),
     });
     let sphere2 = Rc::new(Sphere::new(Vec3::new(-4.0, 1.0, 0.0), 1.0, material2));
     world.add(sphere2);
@@ -110,6 +117,9 @@ fn main() {
     });
     let sphere3 = Rc::new(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, material3));
     world.add(sphere3);
+    let mut bvh_world = HittableList::new();
+    let cnt = world.objects.len();
+    bvh_world.add(Rc::new(BvhNode::new(&mut world.objects, 0, cnt)));
     // 渲染图片
     camera.render(&world);
 }

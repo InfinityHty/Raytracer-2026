@@ -1,7 +1,9 @@
 use crate::hittable::*;
 use crate::ray::Ray;
+use crate::texture::*;
 use crate::vec3::Vec3;
 use rand::{RngExt, rng};
+use std::rc::Rc;
 pub trait Material {
     // bool 表示有无表面散射
     fn scatter(
@@ -14,7 +16,7 @@ pub trait Material {
 }
 // 漫反射
 pub struct Lambertian {
-    pub albedo: Vec3, // 反照率 [0.0,1.0]
+    pub texture: Rc<dyn Texture>, // 反照率 [0.0,1.0]
 }
 impl Material for Lambertian {
     fn scatter(
@@ -29,9 +31,9 @@ impl Material for Lambertian {
             scattered_ray.direction = rec.normal;
         }
         scattered_ray.origin = Vec3::new(rec.hit_point.x, rec.hit_point.y, rec.hit_point.z);
-        attenuation.x = self.albedo.x;
-        attenuation.y = self.albedo.y;
-        attenuation.z = self.albedo.z;
+        attenuation.x = self.texture.value(rec.u, rec.v, rec.hit_point).x;
+        attenuation.y = self.texture.value(rec.u, rec.v, rec.hit_point).y;
+        attenuation.z = self.texture.value(rec.u, rec.v, rec.hit_point).z;
         scattered_ray.time = in_ray.time;
         true
     }

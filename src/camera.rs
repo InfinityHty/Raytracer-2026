@@ -3,6 +3,7 @@ use crate::hittable_list::*;
 use crate::interval::*;
 use crate::material::*;
 use crate::ray::*;
+use crate::texture::*;
 use crate::vec3::*;
 use console::style; // 给控制台打印的文字加颜色、加粗等样式
 use image::{ImageBuffer, RgbImage}; // Rust最主流的图像处理库 创建画布 逐像素绘制光线追踪结果 导出文件图片
@@ -50,7 +51,7 @@ impl Camera {
     }
     pub fn render(&self, world: &HittableList) {
         // 保存路径
-        let path = std::path::Path::new("output/book2/image1.png");
+        let path = std::path::Path::new("output/book2/image2.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
@@ -137,8 +138,10 @@ impl Camera {
             t: 0.0,
             front_face: true,
             material: Rc::new(Lambertian {
-                albedo: Vec3::new(0.0, 0.0, 0.0),
+                texture: Rc::new(SolidColor::new(Vec3::new(0.0, 0.0, 0.0))),
             }),
+            u: 0.0,
+            v: 0.0,
         };
         let interval = Interval::new(0.001, f64::INFINITY);
         let flag = world.hit(ray, &interval, &mut rec);
