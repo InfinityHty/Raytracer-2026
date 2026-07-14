@@ -75,6 +75,6 @@ impl Texture for NoiseTexture {
     #[allow(unused_variables)]
     fn value(&self, u: f64, v: f64, point: &Vec3) -> Vec3 {
         let scale_point = *point * self.scale;
-        Vec3::new(1.0, 1.0, 1.0) * self.noise.noise(&scale_point)
+        Vec3::new(1.0, 1.0, 1.0) * 0.5 * (1.0 + self.noise.noise(&scale_point))
     }
 }

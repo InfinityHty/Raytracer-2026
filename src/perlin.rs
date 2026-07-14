@@ -2,19 +2,19 @@ use crate::vec3::Vec3;
 use rand::{RngExt, rng};
 
 pub struct PerlinNoise {
-    random_float: [f64; 256],
+    random_float: [Vec3; 256],
     perm_x: [usize; 256],
     perm_y: [usize; 256],
     perm_z: [usize; 256],
 }
 impl PerlinNoise {
     pub fn new() -> Self {
-        let mut random_float: [f64; 256] = [0.0; 256];
+        let mut random_float: [Vec3; 256] = [Vec3::new(0.0, 0.0, 0.0); 256];
         let mut perm_x: [usize; 256] = [0; 256];
         let mut perm_y: [usize; 256] = [0; 256];
         let mut perm_z: [usize; 256] = [0; 256];
         for it in &mut random_float {
-            *it = PerlinNoise::random(0.0, 1.0);
+            *it = Vec3::generate_rand_norm(-1.0, 1.0);
         }
         PerlinNoise::generate(&mut perm_x);
         PerlinNoise::generate(&mut perm_y);
@@ -27,17 +27,14 @@ impl PerlinNoise {
         }
     }
     pub fn noise(&self, point: &Vec3) -> f64 {
-        let mut u = point.x - point.x.floor();
-        let mut v = point.y - point.y.floor();
-        let mut w = point.z - point.z.floor();
-        u = u * u * (3.0 - 2.0 * u);
-        v = v * v * (3.0 - 2.0 * v);
-        w = w * w * (3.0 - 2.0 * w);
+        let u = point.x - point.x.floor();
+        let v = point.y - point.y.floor();
+        let w = point.z - point.z.floor();
 
         let i = point.x.floor() as i32;
         let j = point.y.floor() as i32;
         let k = point.z.floor() as i32;
-        let mut c: [[[f64; 2]; 2]; 2] = [[[0.0; 2]; 2]; 2];
+        let mut c: [[[Vec3; 2]; 2]; 2] = [[[Vec3::new(0.0, 0.0, 0.0); 2]; 2]; 2];
         #[allow(clippy::needless_range_loop)]
         for di in 0..2 {
             for dj in 0..2 {
@@ -49,19 +46,23 @@ impl PerlinNoise {
                 }
             }
         }
-        self.trilinear_interp(c, u, v, w)
+        self.perlin_interp(c, u, v, w)
     }
     // 三维线性插值
-    fn trilinear_interp(&self, c: [[[f64; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
+    fn perlin_interp(&self, c: [[[Vec3; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
         let mut accumulation = 0.0;
+        let uu = u * u * (3.0 - 2.0 * u);
+        let vv = v * v * (3.0 - 2.0 * v);
+        let ww = w * w * (3.0 - 2.0 * w);
         #[allow(clippy::needless_range_loop)]
         for i in 0..2 {
             for j in 0..2 {
                 for k in 0..2 {
-                    accumulation += (i as f64 * u + (1 - i) as f64 * (1.0 - u))
-                        * (j as f64 * v + (1 - j) as f64 * (1.0 - v))
-                        * (k as f64 * w + (1 - k) as f64 * (1.0 - w))
-                        * c[i][j][k];
+                    let weight_v = Vec3::new(u - i as f64, v - j as f64, w - k as f64);
+                    accumulation += (i as f64 * uu + (1 - i) as f64 * (1.0 - uu))
+                        * (j as f64 * vv + (1 - j) as f64 * (1.0 - vv))
+                        * (k as f64 * ww + (1 - k) as f64 * (1.0 - ww))
+                        * (c[i][j][k] * weight_v);
                 }
             }
         }
