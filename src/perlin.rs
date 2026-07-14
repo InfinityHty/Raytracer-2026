@@ -8,6 +8,7 @@ pub struct PerlinNoise {
     perm_z: [usize; 256],
 }
 impl PerlinNoise {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         let mut random_float: [Vec3; 256] = [Vec3::new(0.0, 0.0, 0.0); 256];
         let mut perm_x: [usize; 256] = [0; 256];
@@ -78,10 +79,12 @@ impl PerlinNoise {
         }
         accumulation
     }
+    #[allow(dead_code)]
     fn random(min: f64, max: f64) -> f64 {
         let mut rng = rng();
         rng.random_range(min..max)
     }
+    #[allow(dead_code)]
     fn generate(perm: &mut [usize; 256]) {
         #[allow(clippy::needless_range_loop)]
         for i in 0..256 {

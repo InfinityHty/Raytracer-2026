@@ -241,3 +241,67 @@ impl BvhNode {
         a.get_bounding_box().interval_z.min < b.get_bounding_box().interval_z.min
     }
 }
+pub struct Quad {
+    // Ax + by + Cz = d
+    point: Vec3,
+    u: Vec3,
+    v: Vec3,
+    w: Vec3,
+    normal: Vec3,
+    d: f64,
+    material: Rc<dyn Material>,
+    bounding_box: AxisAlignedBoundingBox,
+}
+impl Quad {
+    pub fn new(point: Vec3, u: Vec3, v: Vec3, material: Rc<dyn Material>) -> Self {
+        let point1 = point + u;
+        let point2 = point + v;
+        let point3 = point + u + v;
+        let n = Vec3::cross_multiply(u, v);
+        let box1 = AxisAlignedBoundingBox::new_from_points(point, point3);
+        let box2 = AxisAlignedBoundingBox::new_from_points(point1, point2);
+        Self {
+            point,
+            u,
+            v,
+            w: n / (n * n),
+            normal: n.normalize(),
+            d: point * n.normalize(),
+            material,
+            bounding_box: AxisAlignedBoundingBox::merge(&box1, &box2),
+        }
+    }
+}
+impl Hittable for Quad {
+    fn hit(&self, ray: &Ray, ray_t: &Interval, rec: &mut HitRecord) -> bool {
+        if (self.normal * ray.direction).abs() < 1e-20 {
+            return false;
+        }
+        let t = (self.d - self.normal * ray.origin) / (self.normal * ray.direction);
+        if !ray_t.contains(t) {
+            false
+        } else {
+            let intersection = ray.at(t);
+            let p = intersection - self.point;
+            let alpha = self.w * (Vec3::cross_multiply(p, self.v));
+            let beta = self.w * (Vec3::cross_multiply(self.u, p));
+            if !(0.0..=1.0).contains(&alpha) || !(0.0..=1.0).contains(&beta) {
+                return false;
+            }
+            rec.t = t;
+            rec.hit_point = intersection;
+            if ray.direction * self.normal > 0.0 {
+                rec.normal = self.normal * -1.0;
+                rec.front_face = false;
+            } else {
+                rec.normal = self.normal;
+                rec.front_face = true;
+            }
+            rec.material = self.material.clone();
+            true
+        }
+    }
+    fn get_bounding_box(&self) -> &AxisAlignedBoundingBox {
+        &self.bounding_box
+    }
+}

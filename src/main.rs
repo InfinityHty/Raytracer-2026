@@ -22,14 +22,14 @@ use std::rc::Rc;
 use texture::*;
 
 fn main() {
-    let aspect_ration = 16.0 / 9.0;
+    let aspect_ration = 1.0;
     let width = 400;
     let samples_per_pixel = 100;
     let camera_max_depth = 50;
-    let field_of_view = 20.0;
+    let field_of_view = 80.0;
     let defocus_angle = 0.0;
     let focus_dist = 10.0;
-    let look_from = Vec3::new(13.0, 2.0, 3.0);
+    let look_from = Vec3::new(0.0, 0.0, 9.0);
     let look_at = Vec3::new(0.0, 0.0, 0.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
     let camera = Camera::new(
@@ -45,20 +45,57 @@ fn main() {
         focus_dist,
     );
     let mut world = HittableList::new();
-    let texture_perlin = Rc::new(Lambertian {
-        texture: Rc::new(NoiseTexture {
-            noise: PerlinNoise::new(),
-            scale: 4.0,
-        }),
+    let left_red = Rc::new(Lambertian {
+        texture: Rc::new(SolidColor::new(Vec3::new(1.0, 0.2, 0.2))),
     });
-    let ground = Rc::new(Sphere::new(
-        Vec3::new(0.0, -1000.0, 0.0),
-        1000.0,
-        texture_perlin.clone(),
+    let back_green = Rc::new(Lambertian {
+        texture: Rc::new(SolidColor::new(Vec3::new(0.2, 1.0, 0.2))),
+    });
+    let right_blue = Rc::new(Lambertian {
+        texture: Rc::new(SolidColor::new(Vec3::new(0.2, 0.2, 1.0))),
+    });
+    let upper_orange = Rc::new(Lambertian {
+        texture: Rc::new(SolidColor::new(Vec3::new(1.0, 0.5, 0.0))),
+    });
+    let lower_teal = Rc::new(Lambertian {
+        texture: Rc::new(SolidColor::new(Vec3::new(0.2, 0.8, 0.8))),
+    });
+
+    let quad0 = Rc::new(Quad::new(
+        Vec3::new(-3.0, -2.0, 5.0),
+        Vec3::new(0.0, 0.0, -4.0),
+        Vec3::new(0.0, 4.0, 0.0),
+        left_red,
     ));
-    let sphere = Rc::new(Sphere::new(Vec3::new(0.0, 2.0, 0.0), 2.0, texture_perlin));
-    world.add(ground);
-    world.add(sphere);
+    let quad1 = Rc::new(Quad::new(
+        Vec3::new(-2.0, -2.0, 0.0),
+        Vec3::new(4.0, 0.0, 0.0),
+        Vec3::new(0.0, 4.0, 0.0),
+        back_green,
+    ));
+    let quad2 = Rc::new(Quad::new(
+        Vec3::new(3.0, -2.0, 1.0),
+        Vec3::new(0.0, 0.0, 4.0),
+        Vec3::new(0.0, 4.0, 0.0),
+        right_blue,
+    ));
+    let quad3 = Rc::new(Quad::new(
+        Vec3::new(-2.0, 3.0, 1.0),
+        Vec3::new(4.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, 4.0),
+        upper_orange,
+    ));
+    let quad4 = Rc::new(Quad::new(
+        Vec3::new(-2.0, -3.0, 5.0),
+        Vec3::new(4.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, -4.0),
+        lower_teal,
+    ));
+    world.add(quad0);
+    world.add(quad1);
+    world.add(quad2);
+    world.add(quad3);
+    world.add(quad4);
     camera.render(&world);
 }
 #[allow(dead_code)]
@@ -243,5 +280,46 @@ fn earth() {
     });
     let earth = Rc::new(Sphere::new(Vec3::new(0.0, 0.0, 0.0), 2.0, earth_surface));
     world.add(earth);
+    camera.render(&world);
+}
+#[allow(dead_code)]
+fn perlin_sphere() {
+    let aspect_ration = 16.0 / 9.0;
+    let width = 400;
+    let samples_per_pixel = 100;
+    let camera_max_depth = 50;
+    let field_of_view = 20.0;
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+    let look_from = Vec3::new(13.0, 2.0, 3.0);
+    let look_at = Vec3::new(0.0, 0.0, 0.0);
+    let view_up = Vec3::new(0.0, 1.0, 0.0);
+    let camera = Camera::new(
+        aspect_ration,
+        width,
+        samples_per_pixel,
+        camera_max_depth,
+        field_of_view,
+        look_from,
+        look_at,
+        view_up,
+        defocus_angle,
+        focus_dist,
+    );
+    let mut world = HittableList::new();
+    let texture_perlin = Rc::new(Lambertian {
+        texture: Rc::new(NoiseTexture {
+            noise: PerlinNoise::new(),
+            scale: 4.0,
+        }),
+    });
+    let ground = Rc::new(Sphere::new(
+        Vec3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        texture_perlin.clone(),
+    ));
+    let sphere = Rc::new(Sphere::new(Vec3::new(0.0, 2.0, 0.0), 2.0, texture_perlin));
+    world.add(ground);
+    world.add(sphere);
     camera.render(&world);
 }

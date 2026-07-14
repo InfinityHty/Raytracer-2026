@@ -9,7 +9,12 @@ impl Interval {
     pub fn size(&self) -> f64 {
         self.max - self.min
     }
-    #[allow(dead_code)]
+    pub fn expand(&self, delta: f64) -> Interval {
+        Interval {
+            min: self.min - delta / 2.0,
+            max: self.max + delta / 2.0,
+        }
+    }
     pub fn contains(&self, t: f64) -> bool {
         self.min <= t && t <= self.max
     }

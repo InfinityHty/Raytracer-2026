@@ -1,5 +1,7 @@
 use crate::interval::Interval;
 use crate::ray::Ray;
+use crate::vec3::Vec3;
+
 pub struct AxisAlignedBoundingBox {
     pub interval_x: Interval,
     pub interval_y: Interval,
@@ -7,6 +9,26 @@ pub struct AxisAlignedBoundingBox {
 }
 impl AxisAlignedBoundingBox {
     pub fn new(interval_x: Interval, interval_y: Interval, interval_z: Interval) -> Self {
+        let delta = 0.0001;
+        if interval_x.size() < delta {
+            interval_x.expand(delta);
+        }
+        if interval_y.size() < delta {
+            interval_y.expand(delta);
+        }
+        if interval_z.size() < delta {
+            interval_z.expand(delta);
+        }
+        Self {
+            interval_x,
+            interval_y,
+            interval_z,
+        }
+    }
+    pub fn new_from_points(point1: Vec3, point2: Vec3) -> Self {
+        let interval_x = Interval::new(point1.x.min(point2.x), point1.x.max(point2.x));
+        let interval_y = Interval::new(point1.y.min(point2.y), point1.y.max(point2.y));
+        let interval_z = Interval::new(point1.z.min(point2.z), point1.z.max(point2.z));
         Self {
             interval_x,
             interval_y,
