@@ -48,6 +48,7 @@ fn main() {
     let texture_perlin = Rc::new(Lambertian {
         texture: Rc::new(NoiseTexture {
             noise: PerlinNoise::new(),
+            scale: 4.0,
         }),
     });
     let ground = Rc::new(Sphere::new(

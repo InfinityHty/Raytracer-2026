@@ -69,10 +69,12 @@ impl Texture for ImageTexture {
 }
 pub struct NoiseTexture {
     pub noise: PerlinNoise,
+    pub scale: f64,
 }
 impl Texture for NoiseTexture {
     #[allow(unused_variables)]
     fn value(&self, u: f64, v: f64, point: &Vec3) -> Vec3 {
-        Vec3::new(1.0, 1.0, 1.0) * self.noise.noise(point)
+        let scale_point = *point * self.scale;
+        Vec3::new(1.0, 1.0, 1.0) * self.noise.noise(&scale_point)
     }
 }
