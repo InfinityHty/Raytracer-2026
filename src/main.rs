@@ -67,13 +67,15 @@ fn main() {
     let light_material = Rc::new(Emissive {
         emit_color: Vec3::new(4.0, 4.0, 4.0), // 超乎寻常的亮度
     });
-    let light_source = Rc::new(Quad::new(
+    let light_rectangle = Rc::new(Quad::new(
         Vec3::new(3.0, 1.0, -2.0),
         Vec3::new(2.0, 0.0, 0.0),
         Vec3::new(0.0, 2.0, 0.0),
-        light_material,
+        light_material.clone(),
     ));
-    world.add(light_source);
+    let light_sphere = Rc::new(Sphere::new(Vec3::new(0.0, 7.0, 0.0), 2.0, light_material));
+    world.add(light_rectangle);
+    world.add(light_sphere);
     camera.render(&world);
 }
 #[allow(dead_code)]
