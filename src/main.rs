@@ -20,18 +20,18 @@ use rand::{RngExt, rng};
 use std::path::Path;
 use std::rc::Rc;
 use texture::*;
-
 fn main() {
-    let aspect_ration = 1.0;
+    let aspect_ration = 16.0 / 9.0;
     let width = 400;
     let samples_per_pixel = 100;
     let camera_max_depth = 50;
-    let field_of_view = 80.0;
+    let field_of_view = 20.0;
     let defocus_angle = 0.0;
     let focus_dist = 10.0;
-    let look_from = Vec3::new(0.0, 0.0, 9.0);
-    let look_at = Vec3::new(0.0, 0.0, 0.0);
+    let look_from = Vec3::new(26.0, 3.0, 6.0);
+    let look_at = Vec3::new(0.0, 2.0, 0.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
+    let background = Vec3::new(0.0, 0.0, 0.0);
     let camera = Camera::new(
         aspect_ration,
         width,
@@ -43,6 +43,64 @@ fn main() {
         view_up,
         defocus_angle,
         focus_dist,
+        background,
+    );
+    let mut world = HittableList::new();
+    let perlin_texture = Rc::new(Lambertian {
+        texture: Rc::new(NoiseTexture {
+            noise: PerlinNoise::new(),
+            scale: 4.0,
+        }),
+    });
+    let sphere = Rc::new(Sphere::new(
+        Vec3::new(0.0, 2.0, 0.0),
+        2.0,
+        perlin_texture.clone(),
+    ));
+    let ground = Rc::new(Sphere::new(
+        Vec3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        perlin_texture,
+    ));
+    world.add(ground);
+    world.add(sphere);
+    let light_material = Rc::new(Emissive {
+        emit_color: Vec3::new(4.0, 4.0, 4.0), // 超乎寻常的亮度
+    });
+    let light_source = Rc::new(Quad::new(
+        Vec3::new(3.0, 1.0, -2.0),
+        Vec3::new(2.0, 0.0, 0.0),
+        Vec3::new(0.0, 2.0, 0.0),
+        light_material,
+    ));
+    world.add(light_source);
+    camera.render(&world);
+}
+#[allow(dead_code)]
+fn quads() {
+    let aspect_ration = 1.0;
+    let width = 400;
+    let samples_per_pixel = 100;
+    let camera_max_depth = 50;
+    let field_of_view = 80.0;
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+    let look_from = Vec3::new(0.0, 0.0, 9.0);
+    let look_at = Vec3::new(0.0, 0.0, 0.0);
+    let view_up = Vec3::new(0.0, 1.0, 0.0);
+    let background = Vec3::new(0.7, 0.8, 1.0);
+    let camera = Camera::new(
+        aspect_ration,
+        width,
+        samples_per_pixel,
+        camera_max_depth,
+        field_of_view,
+        look_from,
+        look_at,
+        view_up,
+        defocus_angle,
+        focus_dist,
+        background,
     );
     let mut world = HittableList::new();
     let left_red = Rc::new(Lambertian {
@@ -112,6 +170,7 @@ fn bouncing_spheres() {
     let look_from = Vec3::new(13.0, 2.0, 3.0);
     let look_at = Vec3::new(0.0, 0.0, 0.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
+    let background = Vec3::new(0.7, 0.8, 1.0);
     let camera = Camera::new(
         aspect_ration,
         width,
@@ -123,6 +182,7 @@ fn bouncing_spheres() {
         view_up,
         defocus_angle,
         focus_dist,
+        background,
     );
     // 定义材质
     let texture_odd = Rc::new(SolidColor::new(Vec3::new(0.2, 0.3, 0.1)));
@@ -218,6 +278,7 @@ fn checker_spheres() {
     let look_from = Vec3::new(13.0, 2.0, 3.0);
     let look_at = Vec3::new(0.0, 0.0, 0.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
+    let background = Vec3::new(0.7, 0.8, 1.0);
     let camera = Camera::new(
         aspect_ration,
         width,
@@ -229,6 +290,7 @@ fn checker_spheres() {
         view_up,
         defocus_angle,
         focus_dist,
+        background,
     );
     let mut world = HittableList::new();
     let texture_odd = Rc::new(SolidColor::new(Vec3::new(0.2, 0.3, 0.1)));
@@ -261,6 +323,7 @@ fn earth() {
     let look_from = Vec3::new(0.0, 0.0, 12.0);
     let look_at = Vec3::new(0.0, 0.0, 0.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
+    let background = Vec3::new(0.7, 0.8, 1.00);
     let camera = Camera::new(
         aspect_ration,
         width,
@@ -272,6 +335,7 @@ fn earth() {
         view_up,
         defocus_angle,
         focus_dist,
+        background,
     );
     let mut world = HittableList::new();
     let earth_texture = Rc::new(ImageTexture::new(img));
@@ -294,6 +358,7 @@ fn perlin_sphere() {
     let look_from = Vec3::new(13.0, 2.0, 3.0);
     let look_at = Vec3::new(0.0, 0.0, 0.0);
     let view_up = Vec3::new(0.0, 1.0, 0.0);
+    let background = Vec3::new(0.7, 0.8, 1.0);
     let camera = Camera::new(
         aspect_ration,
         width,
@@ -305,6 +370,7 @@ fn perlin_sphere() {
         view_up,
         defocus_angle,
         focus_dist,
+        background,
     );
     let mut world = HittableList::new();
     let texture_perlin = Rc::new(Lambertian {

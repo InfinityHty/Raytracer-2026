@@ -21,6 +21,7 @@ pub struct Camera {
     view_up: Vec3,
     defocus_angle: f64,
     focus_dist: f64,
+    background: Vec3,
 }
 impl Camera {
     #[allow(clippy::too_many_arguments)]
@@ -35,6 +36,7 @@ impl Camera {
         view_up: Vec3,
         defocus_angle: f64,
         focus_dist: f64,
+        background: Vec3,
     ) -> Self {
         Self {
             aspect_ration,
@@ -47,11 +49,12 @@ impl Camera {
             view_up,
             defocus_angle,
             focus_dist,
+            background,
         }
     }
     pub fn render(&self, world: &HittableList) {
         // 保存路径
-        let path = std::path::Path::new("output/book2/image16.png");
+        let path = std::path::Path::new("output/book2/image17.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
@@ -104,7 +107,7 @@ impl Camera {
                         defocus_disk_u,
                         defocus_disk_v,
                     );
-                    pixel_color = pixel_color + Camera::ray_color(&ray, world, self.max_depth);
+                    pixel_color = pixel_color + self.ray_color(&ray, world, self.max_depth);
                 }
                 pixel_color = pixel_color / self.samples_per_pixel as f64;
                 let color_interval = Interval::new(0.0, 1.0);
@@ -113,7 +116,7 @@ impl Camera {
                 pixel_color.z = color_interval.clamp(pixel_color.z);
 
                 pixel_color = Camera::linear_to_gamma(pixel_color);
-                pixel_color = pixel_color * 256.0;
+                pixel_color = pixel_color * 255.0;
                 *pixel = pixel_color.to_rgb();
             }
             progress.inc(1);
@@ -127,7 +130,7 @@ impl Camera {
         img.save(path).expect("Cannot save the image to the file");
     }
 
-    fn ray_color(ray: &Ray, world: &HittableList, depth: u32) -> Vec3 {
+    fn ray_color(&self, ray: &Ray, world: &HittableList, depth: u32) -> Vec3 {
         if depth == 0 {
             return Vec3::new(0.0, 0.0, 0.0);
         }
@@ -149,26 +152,24 @@ impl Camera {
             let mut scattered_ray: Ray =
                 Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0), 0.0);
             let mut reflect_rate = Vec3::new(0.0, 0.0, 0.0);
+            let emit = rec.material.emitted(rec.u, rec.v, rec.hit_point);
             if rec
                 .material
                 .scatter(ray, &mut scattered_ray, &rec, &mut reflect_rate)
             {
-                let mut color = Camera::ray_color(&scattered_ray, world, depth - 1);
+                let mut color = self.ray_color(&scattered_ray, world, depth - 1);
                 color.x *= reflect_rate.x;
                 color.y *= reflect_rate.y;
                 color.z *= reflect_rate.z;
                 color
             } else {
-                Vec3::new(0.0, 0.0, 0.0)
+                emit
             }
-            // 余弦分布
-            // let reflection_direction = rec.normal + Vec3::generate_rand_norm(-1.0, 1.0);
-            // let reflection_ray = Ray::new(rec.hit_point, reflection_direction);
-            // Camera::ray_color(&reflection_ray, world, depth - 1) * 0.5
         } else {
-            let unit_direction = ray.direction().normalize();
-            let a = (unit_direction.get_y() + 1.0) * 0.5;
-            Vec3::new(1.0, 1.0, 1.0) * (1.0 - a) + Vec3::new(0.5, 0.7, 1.0) * a
+            // let unit_direction = ray.direction().normalize();
+            // let a = (unit_direction.get_y() + 1.0) * 0.5;
+            // Vec3::new(1.0, 1.0, 1.0) * (1.0 - a) + Vec3::new(0.5, 0.7, 1.0) * a
+            self.background
         }
     }
     fn get_ray(

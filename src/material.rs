@@ -13,6 +13,10 @@ pub trait Material {
         rec: &HitRecord,
         attenuation: &mut Vec3, // 衰减
     ) -> bool;
+    #[allow(unused_variables)]
+    fn emitted(&self, u: f64, v: f64, point: Vec3) -> Vec3 {
+        Vec3::new(0.0, 0.0, 0.0)
+    }
 }
 // 漫反射
 pub struct Lambertian {
@@ -129,5 +133,24 @@ impl Material for Dielectrics {
         }
         scattered_ray.time = in_ray.time;
         true
+    }
+}
+pub struct Emissive {
+    pub emit_color: Vec3,
+}
+impl Material for Emissive {
+    #[allow(unused_variables)]
+    fn scatter(
+        &self,
+        in_ray: &Ray,
+        scattered_ray: &mut Ray,
+        rec: &HitRecord,
+        attenuation: &mut Vec3,
+    ) -> bool {
+        false
+    }
+    #[allow(unused_variables)]
+    fn emitted(&self, u: f64, v: f64, point: Vec3) -> Vec3 {
+        self.emit_color
     }
 }

@@ -54,17 +54,7 @@ impl Vec3 {
     pub fn to_rgb(self) -> Rgb<u8> {
         Rgb([self.x as u8, self.y as u8, self.z as u8])
     }
-    #[allow(dead_code)]
-    pub fn get_x(&self) -> f64 {
-        self.x
-    }
-    pub fn get_y(&self) -> f64 {
-        self.y
-    }
-    #[allow(dead_code)]
-    pub fn get_z(&self) -> f64 {
-        self.z
-    }
+
     pub fn length_squared(&self) -> f64 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
