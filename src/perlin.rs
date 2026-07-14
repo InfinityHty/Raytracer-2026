@@ -27,9 +27,12 @@ impl PerlinNoise {
         }
     }
     pub fn noise(&self, point: &Vec3) -> f64 {
-        let u = point.x - point.x.floor();
-        let v = point.y - point.y.floor();
-        let w = point.z - point.z.floor();
+        let mut u = point.x - point.x.floor();
+        let mut v = point.y - point.y.floor();
+        let mut w = point.z - point.z.floor();
+        u = u * u * (3.0 - 2.0 * u);
+        v = v * v * (3.0 - 2.0 * v);
+        w = w * w * (3.0 - 2.0 * w);
 
         let i = point.x.floor() as i32;
         let j = point.y.floor() as i32;
@@ -48,6 +51,7 @@ impl PerlinNoise {
         }
         self.trilinear_interp(c, u, v, w)
     }
+    // 三维线性插值
     fn trilinear_interp(&self, c: [[[f64; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
         let mut accumulation = 0.0;
         #[allow(clippy::needless_range_loop)]
