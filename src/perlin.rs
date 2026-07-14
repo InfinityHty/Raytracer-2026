@@ -48,7 +48,17 @@ impl PerlinNoise {
         }
         self.perlin_interp(c, u, v, w)
     }
-    // 三维线性插值
+    pub fn turb(&self, point: &Vec3, depth: i32) -> f64 {
+        let mut accum = 0.0;
+        let mut weight = 1.0;
+        let mut p = *point;
+        for _i in 0..depth {
+            accum += weight * self.noise(&p);
+            weight *= 0.5;
+            p = p * 2.0;
+        }
+        accum.abs()
+    }
     fn perlin_interp(&self, c: [[[Vec3; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
         let mut accumulation = 0.0;
         let uu = u * u * (3.0 - 2.0 * u);
