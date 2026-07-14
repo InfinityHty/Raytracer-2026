@@ -69,7 +69,7 @@ fn main() {
         Vec3::new(0.0, 0.0, 555.0),
         Vec3::new(555.0, 0.0, 0.0),
         Vec3::new(0.0, 555.0, 0.0),
-        white,
+        white.clone(),
     ));
     world.add(wall0);
     world.add(wall1);
@@ -77,6 +77,16 @@ fn main() {
     world.add(wall3);
     world.add(wall4);
     world.add(wall5);
+    world.add_box(
+        Vec3::new(130.0, 0.0, 65.0),
+        Vec3::new(295.0, 165.0, 230.0),
+        white.clone(),
+    );
+    world.add_box(
+        Vec3::new(265.0, 0.0, 295.0),
+        Vec3::new(430.0, 330.0, 460.0),
+        white.clone(),
+    );
 
     let aspect_ration = 1.0;
     let width = 600;
