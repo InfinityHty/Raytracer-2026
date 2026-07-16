@@ -45,12 +45,9 @@ impl Sphere {
         }
     }
     pub fn get_sphere_uv(&self, point: &Vec3) -> (f64, f64) {
-        let theta = (-point.y / self.radius).acos();
-        let phi = (-point.z).atan2(point.x) + std::f64::consts::PI;
-        (
-            phi / 2.0 / std::f64::consts::PI,
-            theta / std::f64::consts::PI,
-        )
+        let theta = (-(point.y - self.center.y) / self.radius).acos();
+        let phi = (-(point.z - self.center.z)).atan2(point.x - self.center.x) + PI;
+        (phi / 2.0 / PI, theta / PI)
     }
     // u,v: [0,1] 对应 phi theta
 }
@@ -163,7 +160,13 @@ impl Hittable for BvhNode {
             return false;
         }
         let hit_left = self.left.hit(ray, ray_t, rec);
-        let hit_right = self.right.hit(ray, ray_t, rec);
+        #[allow(unused_assignments)]
+        let mut hit_right = false;
+        if hit_left {
+            hit_right = self.right.hit(ray, &Interval::new(ray_t.min, rec.t), rec);
+        } else {
+            hit_right = self.right.hit(ray, ray_t, rec);
+        }
         hit_left || hit_right
     }
     fn get_bounding_box(&self) -> &AxisAlignedBoundingBox {
