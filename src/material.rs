@@ -154,3 +154,30 @@ impl Material for Emissive {
         self.emit_color
     }
 }
+pub struct Isotropic {
+    pub texture: Rc<dyn Texture>,
+}
+impl Isotropic {
+    #[allow(dead_code)]
+    pub fn new(texture: Rc<dyn Texture>) -> Isotropic {
+        Isotropic { texture }
+    }
+}
+impl Material for Isotropic {
+    fn scatter(
+        &self,
+        in_ray: &Ray,
+        scattered_ray: &mut Ray,
+        rec: &HitRecord,
+        attenuation: &mut Vec3,
+    ) -> bool {
+        scattered_ray.origin = rec.hit_point;
+        scattered_ray.direction = Vec3::generate_rand_norm(-1.0, 1.0);
+        scattered_ray.time = in_ray.time;
+        let texture_value = self.texture.value(rec.u, rec.v, &rec.hit_point);
+        attenuation.x = texture_value.x;
+        attenuation.y = texture_value.y;
+        attenuation.z = texture_value.z;
+        true
+    }
+}

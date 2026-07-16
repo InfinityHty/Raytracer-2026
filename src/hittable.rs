@@ -1,8 +1,9 @@
 use crate::axis_aligned_bounding_boxes::AxisAlignedBoundingBox;
 use crate::hittable_list::HittableList;
 use crate::interval::Interval;
-use crate::material::Material;
+use crate::material::*;
 use crate::ray::Ray;
+use crate::texture::*;
 use crate::vec3::Vec3;
 use rand::{RngExt, rng};
 use std::cmp::Ordering;
@@ -468,5 +469,91 @@ impl Cube {
             sides,
             bounding_box,
         }
+    }
+}
+pub struct ConstantMedium {
+    boundary: Rc<dyn Hittable>,
+    neg_inv_density: f64,
+    phase_function: Rc<dyn Material>,
+}
+impl ConstantMedium {
+    pub fn new(
+        boundary: Rc<dyn Hittable>,
+        density: f64,
+        phase_function: Rc<dyn Material>,
+    ) -> ConstantMedium {
+        Self {
+            boundary,
+            neg_inv_density: -1.0 / density,
+            phase_function,
+        }
+    }
+}
+impl Hittable for ConstantMedium {
+    fn hit(&self, ray: &Ray, ray_t: &Interval, rec: &mut HitRecord) -> bool {
+        let mut rec1 = HitRecord {
+            hit_point: Vec3::new(0.0, 0.0, 0.0),
+            normal: Vec3::new(0.0, 0.0, 0.0),
+            t: 0.0,
+            front_face: true,
+            material: Rc::new(Lambertian {
+                texture: Rc::new(SolidColor::new(Vec3::new(0.0, 0.0, 0.0))),
+            }),
+            u: 0.0,
+            v: 0.0,
+        };
+        let mut rec2 = HitRecord {
+            hit_point: Vec3::new(0.0, 0.0, 0.0),
+            normal: Vec3::new(0.0, 0.0, 0.0),
+            t: 0.0,
+            front_face: true,
+            material: Rc::new(Lambertian {
+                texture: Rc::new(SolidColor::new(Vec3::new(0.0, 0.0, 0.0))),
+            }),
+            u: 0.0,
+            v: 0.0,
+        };
+        if !self.boundary.hit(
+            ray,
+            &Interval::new(-f64::INFINITY, f64::INFINITY),
+            &mut rec1,
+        ) {
+            return false;
+        }
+        if !self.boundary.hit(
+            ray,
+            &Interval::new(rec1.t + 0.0001, f64::INFINITY),
+            &mut rec2,
+        ) {
+            return false;
+        }
+        if rec1.t < ray_t.min {
+            rec1.t = ray_t.min;
+        }
+        if rec2.t > ray_t.max {
+            rec2.t = ray_t.max;
+        }
+        if rec1.t >= rec2.t {
+            return false;
+        }
+        if rec1.t < 0.0 {
+            rec1.t = 0.0;
+        }
+        let ray_length = ray.direction.length_squared().sqrt();
+        let distance_inside_boundary = (rec2.t - rec1.t) * ray_length;
+        let mut rng = rng();
+        let hit_distance = self.neg_inv_density * (rng.random_range(0.00001..1.0) as f64).log2();
+        if hit_distance > distance_inside_boundary {
+            return false;
+        }
+        rec.t = rec1.t + hit_distance / ray_length;
+        rec.hit_point = ray.at(rec.t);
+        rec.normal = Vec3::new(1.0, 0.0, 0.0);
+        rec.material = self.phase_function.clone();
+        rec.front_face = true;
+        true
+    }
+    fn get_bounding_box(&self) -> &AxisAlignedBoundingBox {
+        self.boundary.get_bounding_box()
     }
 }

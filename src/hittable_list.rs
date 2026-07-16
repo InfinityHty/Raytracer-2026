@@ -27,7 +27,6 @@ impl HittableList {
             AxisAlignedBoundingBox::merge(&self.bounding_box, object.get_bounding_box());
         self.objects.push(object);
     }
-
     #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.objects.clear();

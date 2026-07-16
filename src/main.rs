@@ -32,6 +32,126 @@ fn main() {
         texture: Rc::new(SolidColor::new(Vec3::new(0.12, 0.45, 0.15))),
     });
     let light = Rc::new(Emissive {
+        emit_color: Vec3::new(7.0, 7.0, 7.0),
+    });
+
+    let wall0 = Rc::new(Quad::new(
+        Vec3::new(555.0, 0.0, 0.0),
+        Vec3::new(0.0, 555.0, 0.0),
+        Vec3::new(0.0, 0.0, 555.0),
+        green,
+    ));
+    let wall1 = Rc::new(Quad::new(
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(0.0, 555.0, 0.0),
+        Vec3::new(0.0, 0.0, 555.0),
+        red,
+    ));
+    let light_source = Rc::new(Quad::new(
+        Vec3::new(113.0, 554.0, 127.0),
+        Vec3::new(330.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, 305.0),
+        light,
+    ));
+    let wall3 = Rc::new(Quad::new(
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(555.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, 555.0),
+        white.clone(),
+    ));
+    let wall4 = Rc::new(Quad::new(
+        Vec3::new(555.0, 555.0, 555.0),
+        Vec3::new(-555.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, -555.0),
+        white.clone(),
+    ));
+    let wall5 = Rc::new(Quad::new(
+        Vec3::new(0.0, 0.0, 555.0),
+        Vec3::new(555.0, 0.0, 0.0),
+        Vec3::new(0.0, 555.0, 0.0),
+        white.clone(),
+    ));
+    world.add(wall0);
+    world.add(wall1);
+    world.add(light_source);
+    world.add(wall3);
+    world.add(wall4);
+    world.add(wall5);
+    let box1 = Rc::new(Cube::new(
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(165.0, 330.0, 165.0),
+        white.clone(),
+    ));
+    let box2 = Rc::new(Cube::new(
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(165.0, 165.0, 165.0),
+        white.clone(),
+    ));
+
+    let rotated_box1 = Rc::new(RotateY::new(box1, 15.0));
+    let rotated_box2 = Rc::new(RotateY::new(box2, -18.0));
+    let moved_box1 = Rc::new(Translate::new(rotated_box1, Vec3::new(265.0, 0.0, 295.0)));
+    let moved_box2 = Rc::new(Translate::new(rotated_box2, Vec3::new(130.0, 0.0, 65.0)));
+    let smoke_box1 = Rc::new(ConstantMedium::new(
+        moved_box1,
+        0.01,
+        Rc::new(Isotropic {
+            texture: Rc::new(SolidColor::new(Vec3::new(0.0, 0.0, 0.0))),
+        }),
+    ));
+    let smoke_box2 = Rc::new(ConstantMedium::new(
+        moved_box2,
+        0.01,
+        Rc::new(Isotropic {
+            texture: Rc::new(SolidColor::new(Vec3::new(1.0, 1.0, 1.0))),
+        }),
+    ));
+    world.add(smoke_box1);
+    world.add(smoke_box2);
+
+    let aspect_ration = 1.0;
+    let width = 600;
+    let samples_per_pixel = 200;
+    let camera_max_depth = 50;
+    let field_of_view = 40.0;
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+    let look_from = Vec3::new(278.0, 278.0, -800.0);
+    let look_at = Vec3::new(278.0, 278.0, 0.0);
+    let view_up = Vec3::new(0.0, 1.0, 0.0);
+    let background = Vec3::new(0.0, 0.0, 0.0);
+    let camera = Camera::new(
+        aspect_ration,
+        width,
+        samples_per_pixel,
+        camera_max_depth,
+        field_of_view,
+        look_from,
+        look_at,
+        view_up,
+        defocus_angle,
+        focus_dist,
+        background,
+    );
+    let mut bvh_world = HittableList::new();
+    let cnt = world.objects.len();
+    bvh_world.add(Rc::new(BvhNode::new(&mut world.objects, 0, cnt)));
+    // 渲染图片
+    camera.render(&world);
+}
+#[allow(dead_code)]
+fn cornell_box() {
+    let mut world = HittableList::new();
+    let red = Rc::new(Lambertian {
+        texture: Rc::new(SolidColor::new(Vec3::new(0.65, 0.05, 0.05))),
+    });
+    let white = Rc::new(Lambertian {
+        texture: Rc::new(SolidColor::new(Vec3::new(0.73, 0.73, 0.73))),
+    });
+    let green = Rc::new(Lambertian {
+        texture: Rc::new(SolidColor::new(Vec3::new(0.12, 0.45, 0.15))),
+    });
+    let light = Rc::new(Emissive {
         emit_color: Vec3::new(15.0, 15.0, 15.0),
     });
 
