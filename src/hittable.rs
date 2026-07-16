@@ -1,11 +1,14 @@
 use crate::axis_aligned_bounding_boxes::AxisAlignedBoundingBox;
+use crate::hittable_list::HittableList;
 use crate::interval::Interval;
 use crate::material::Material;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
 use rand::{RngExt, rng};
 use std::cmp::Ordering;
+use std::f64::consts::PI;
 use std::rc::Rc;
+
 #[allow(unused_variables)]
 pub struct HitRecord {
     pub hit_point: Vec3,
@@ -303,5 +306,167 @@ impl Hittable for Quad {
     }
     fn get_bounding_box(&self) -> &AxisAlignedBoundingBox {
         &self.bounding_box
+    }
+}
+// 平移
+pub struct Translate {
+    object: Rc<dyn Hittable>,
+    offset: Vec3,
+    bounding_box: AxisAlignedBoundingBox,
+}
+impl Translate {
+    pub fn new(object: Rc<dyn Hittable>, offset: Vec3) -> Self {
+        let old_box = object.get_bounding_box();
+        let point1 = Vec3::new(
+            old_box.interval_x.min,
+            old_box.interval_y.min,
+            old_box.interval_z.min,
+        ) + offset;
+        let point2 = Vec3::new(
+            old_box.interval_x.max,
+            old_box.interval_y.max,
+            old_box.interval_z.max,
+        ) + offset;
+        let bounding_box = AxisAlignedBoundingBox::new_from_points(point1, point2);
+        Self {
+            object,
+            offset,
+            bounding_box,
+        }
+    }
+}
+impl Hittable for Translate {
+    fn hit(&self, ray: &Ray, ray_t: &Interval, rec: &mut HitRecord) -> bool {
+        let ray_moved = Ray::new(ray.origin - self.offset, ray.direction, ray.time);
+        if !self.object.hit(&ray_moved, ray_t, rec) {
+            return false;
+        }
+        rec.hit_point = rec.hit_point + self.offset;
+        true
+    }
+    fn get_bounding_box(&self) -> &AxisAlignedBoundingBox {
+        &self.bounding_box
+    }
+}
+// 绕y轴
+pub struct RotateY {
+    object: Rc<dyn Hittable>,
+    cos_theta: f64,
+    sin_theta: f64,
+    bounding_box: AxisAlignedBoundingBox,
+}
+impl RotateY {
+    pub fn new(object: Rc<dyn Hittable>, angle: f64) -> Self {
+        let cos_theta = (angle / 180.0 * PI).cos();
+        let sin_theta = (angle / 180.0 * PI).sin();
+
+        let mut min = Vec3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY);
+        let mut max = Vec3::new(-f64::INFINITY, -f64::INFINITY, -f64::INFINITY);
+        let old_box = object.get_bounding_box();
+
+        for i in 0..2 {
+            for j in 0..2 {
+                for k in 0..2 {
+                    let x =
+                        i as f64 * old_box.interval_x.min + (1 - i) as f64 * old_box.interval_x.max;
+                    let y =
+                        j as f64 * old_box.interval_y.min + (1 - j) as f64 * old_box.interval_y.max;
+                    let z =
+                        k as f64 * old_box.interval_z.min + (1 - k) as f64 * old_box.interval_z.max;
+
+                    let new_x = x * cos_theta + z * sin_theta;
+                    let new_z = x * -sin_theta + z * cos_theta;
+
+                    let new_point = Vec3::new(new_x, y, new_z);
+                    min.x = min.x.min(new_point.x);
+                    max.x = max.x.max(new_point.x);
+                    min.y = min.y.min(new_point.y);
+                    max.y = max.y.max(new_point.y);
+                    min.z = min.z.min(new_point.z);
+                    max.z = max.z.max(new_point.z);
+                }
+            }
+        }
+        let bounding_box = AxisAlignedBoundingBox::new_from_points(min, max);
+        Self {
+            object,
+            cos_theta,
+            sin_theta,
+            bounding_box,
+        }
+    }
+}
+impl Hittable for RotateY {
+    fn hit(&self, ray: &Ray, ray_t: &Interval, rec: &mut HitRecord) -> bool {
+        let rotated_origin = Vec3::new(
+            ray.origin.x * self.cos_theta - ray.origin.z * self.sin_theta,
+            ray.origin.y,
+            ray.origin.x * self.sin_theta + ray.origin.z * self.cos_theta,
+        );
+        let rotated_direction = Vec3::new(
+            ray.direction.x * self.cos_theta - ray.direction.z * self.sin_theta,
+            ray.direction.y,
+            ray.direction.x * self.sin_theta + ray.direction.z * self.cos_theta,
+        );
+        let rotated_ray = Ray::new(rotated_origin, rotated_direction, ray.time);
+
+        if !self.object.hit(&rotated_ray, ray_t, rec) {
+            return false;
+        }
+        rec.hit_point = Vec3::new(
+            rec.hit_point.x * self.cos_theta + rec.hit_point.z * self.sin_theta,
+            rec.hit_point.y,
+            rec.hit_point.x * -self.sin_theta + rec.hit_point.z * self.cos_theta,
+        );
+        rec.normal = Vec3::new(
+            rec.normal.x * self.cos_theta + rec.normal.z * self.sin_theta,
+            rec.normal.y,
+            rec.normal.x * -self.sin_theta + rec.normal.z * self.cos_theta,
+        );
+        true
+    }
+    fn get_bounding_box(&self) -> &AxisAlignedBoundingBox {
+        &self.bounding_box
+    }
+}
+pub struct Cube {
+    sides: HittableList,
+    bounding_box: AxisAlignedBoundingBox,
+}
+impl Hittable for Cube {
+    fn hit(&self, ray: &Ray, ray_t: &Interval, rec: &mut HitRecord) -> bool {
+        self.sides.hit(ray, ray_t, rec)
+    }
+    fn get_bounding_box(&self) -> &AxisAlignedBoundingBox {
+        &self.bounding_box
+    }
+}
+impl Cube {
+    pub fn new(point1: Vec3, point2: Vec3, mat: Rc<dyn Material>) -> Self {
+        let min = Vec3::new(
+            point1.x.min(point2.x),
+            point1.y.min(point2.y),
+            point1.z.min(point2.z),
+        );
+        let max = Vec3::new(
+            point1.x.max(point2.x),
+            point1.y.max(point2.y),
+            point1.z.max(point2.z),
+        );
+        let dx = Vec3::new(max.x - min.x, 0.0, 0.0);
+        let dy = Vec3::new(0.0, max.y - min.y, 0.0);
+        let dz = Vec3::new(0.0, 0.0, max.z - min.z);
+        let mut sides = HittableList::new();
+        sides.add(Rc::new(Quad::new(min, dx, dy, mat.clone())));
+        sides.add(Rc::new(Quad::new(min, dx, dz, mat.clone())));
+        sides.add(Rc::new(Quad::new(min, dy, dz, mat.clone())));
+        sides.add(Rc::new(Quad::new(max, dx * -1.0, dy * -1.0, mat.clone())));
+        sides.add(Rc::new(Quad::new(max, dx * -1.0, dz * -1.0, mat.clone())));
+        sides.add(Rc::new(Quad::new(max, dy * -1.0, dz * -1.0, mat.clone())));
+        let bounding_box = AxisAlignedBoundingBox::new_from_points(min, max);
+        Self {
+            sides,
+            bounding_box,
+        }
     }
 }

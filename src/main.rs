@@ -77,16 +77,26 @@ fn main() {
     world.add(wall3);
     world.add(wall4);
     world.add(wall5);
-    world.add_box(
-        Vec3::new(130.0, 0.0, 65.0),
-        Vec3::new(295.0, 165.0, 230.0),
+    let box1 = Rc::new(Cube::new(
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(165.0, 330.0, 165.0),
         white.clone(),
-    );
-    world.add_box(
-        Vec3::new(265.0, 0.0, 295.0),
-        Vec3::new(430.0, 330.0, 460.0),
+    ));
+    let box2 = Rc::new(Cube::new(
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(165.0, 165.0, 165.0),
         white.clone(),
-    );
+    ));
+    // let box1 = Rc::new(Cube::new(Vec3::new(265.0,0.0,295.0),Vec3::new(430.0,330.0,460.0),white.clone()));
+    // let box2 = Rc::new(Cube::new(Vec3::new(130.0,0.0,65.0),Vec3::new(295.0,165.0,230.0),white.clone()));
+    let rotated_box1 = Rc::new(RotateY::new(box1, 15.0));
+    let rotated_box2 = Rc::new(RotateY::new(box2, -18.0));
+    let moved_box1 = Rc::new(Translate::new(rotated_box1, Vec3::new(265.0, 0.0, 295.0)));
+    let moved_box2 = Rc::new(Translate::new(rotated_box2, Vec3::new(130.0, 0.0, 65.0)));
+    // world.add_box(Vec3::new(130.0, 0.0, 65.0),Vec3::new(295.0, 165.0, 230.0),white.clone());
+    // world.add_box(Vec3::new(265.0,0.0,295.0),Vec3::new(430.0,330.0,460.0),white.clone());
+    world.add(moved_box1);
+    world.add(moved_box2);
 
     let aspect_ration = 1.0;
     let width = 600;
@@ -112,6 +122,10 @@ fn main() {
         focus_dist,
         background,
     );
+    let mut bvh_world = HittableList::new();
+    let cnt = world.objects.len();
+    bvh_world.add(Rc::new(BvhNode::new(&mut world.objects, 0, cnt)));
+    // 渲染图片
     camera.render(&world);
 }
 
