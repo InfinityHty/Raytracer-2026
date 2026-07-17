@@ -1,5 +1,5 @@
 # Advanced Features
-### 1. Multi-threading
+### 1. Multi-threading (5pts)
 ##### basic: Single-threaded per-pixel rendering
 ```
         for j in 0..height {
@@ -113,3 +113,71 @@ Single-threaded:
 Multi-threaded(8-threaded):
 3min\
 Acceleration: 3.7 times faster
+
+### 2. Support for Model Loading (5pts)
+Support 3D model file (.obj) loading
+```
+    // 读取命令行数据 支持多个模型
+    let obj_files: Vec<String> = std::env::args().skip(1).collect();
+
+    for obj_file in obj_files {
+        // 加载.obj文件
+        let (models, _materials) = tobj::load_obj(&obj_file, &tobj::LoadOptions::default())
+            .expect("Failed to OBJ load file");
+
+        for m in models.iter() {
+            let mesh = &m.mesh;
+            let mut next_face = 0;
+            for face in 0..mesh.face_arities.len() {
+                let end = next_face + mesh.face_arities[face] as usize;
+
+                let face_indices = &mesh.indices[next_face..end];
+
+                if face_indices.len() >= 3 {
+                    let point0 = Vec3::new(
+                        mesh.positions[(face_indices[0] * 3) as usize] as f64,
+                        mesh.positions[(face_indices[0] * 3 + 1) as usize] as f64,
+                        mesh.positions[(face_indices[0] * 3 + 2) as usize] as f64,
+                    );
+                    let point1 = Vec3::new(
+                        mesh.positions[(face_indices[1] * 3) as usize] as f64,
+                        mesh.positions[(face_indices[1] * 3 + 1) as usize] as f64,
+                        mesh.positions[(face_indices[1] * 3 + 2) as usize] as f64,
+                    );
+                    let point2 = Vec3::new(
+                        mesh.positions[(face_indices[2] * 3) as usize] as f64,
+                        mesh.positions[(face_indices[2] * 3 + 1) as usize] as f64,
+                        mesh.positions[(face_indices[2] * 3 + 2) as usize] as f64,
+                    );
+                    world.add(Arc::new(Triangle::new(
+                        point0,
+                        point1 - point0,
+                        point2 - point0,
+                        Arc::new(Lambertian {
+                            texture: Arc::new(SolidColor::new(Vec3::new(0.9, 0.9, 0.9))),
+                        }),
+                    )));
+
+                    if face_indices.len() == 4 {
+                        let point3 = Vec3::new(
+                            mesh.positions[(face_indices[3] * 3) as usize] as f64,
+                            mesh.positions[(face_indices[3] * 3 + 1) as usize] as f64,
+                            mesh.positions[(face_indices[3] * 3 + 2) as usize] as f64,
+                        );
+                        world.add(Arc::new(Triangle::new(
+                            point3,
+                            point1 - point3,
+                            point2 - point3,
+                            Arc::new(Lambertian {
+                                texture: Arc::new(SolidColor::new(Vec3::new(0.9, 0.9, 0.9))),
+                            }),
+                        )));
+                    }
+                }
+                next_face = end;
+            }
+        }
+    }
+```
+##### Example of importing and rendering a 3D paper crane.
+![output](./assets/paper_crane.png "")

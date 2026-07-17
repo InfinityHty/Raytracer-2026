@@ -55,7 +55,7 @@ impl Camera {
     }
     pub fn render(self: Arc<Self>, world: Arc<HittableList>) {
         // 保存路径
-        let path = std::path::Path::new("output/book2/image23_2.png");
+        let path = std::path::Path::new("output/bonus/image1.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
@@ -125,7 +125,7 @@ impl Camera {
         // progress.finish();
         // 多线程并发
         let mut handles = vec![];
-        let number_of_thread = 8;
+        let number_of_thread = 14;
         for i in 0..number_of_thread {
             let start_line = i * height / number_of_thread;
             let mut end_line = (i + 1) * height / number_of_thread;

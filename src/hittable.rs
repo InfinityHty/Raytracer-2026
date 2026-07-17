@@ -312,6 +312,71 @@ impl Hittable for Quad {
         &self.bounding_box
     }
 }
+pub struct Triangle {
+    point: Vec3,
+    u: Vec3,
+    v: Vec3,
+    w: Vec3,
+    normal: Vec3,
+    d: f64,
+    material: Arc<dyn Material>,
+    bounding_box: AxisAlignedBoundingBox,
+}
+impl Triangle {
+    pub fn new(point: Vec3, u: Vec3, v: Vec3, material: Arc<dyn Material>) -> Self {
+        let point1 = point + u;
+        let point2 = point + v;
+        let box1 = AxisAlignedBoundingBox::new_from_points(point, point1);
+        let box2 = AxisAlignedBoundingBox::new_from_points(point, point2);
+        let bounding_box = AxisAlignedBoundingBox::merge(&box1, &box2);
+        let n = Vec3::cross_multiply(u, v);
+        Self {
+            point,
+            u,
+            v,
+            w: n / (n * n),
+            normal: n.normalize(),
+            d: point * n.normalize(),
+            material,
+            bounding_box,
+        }
+    }
+}
+impl Hittable for Triangle {
+    fn hit(&self, ray: &Ray, ray_t: &Interval, rec: &mut HitRecord) -> bool {
+        if (self.normal * ray.direction).abs() < 1e-20 {
+            return false;
+        }
+        let t = (self.d - self.normal * ray.origin) / (self.normal * ray.direction);
+        if !ray_t.contains(t) {
+            false
+        } else {
+            let intersection = ray.at(t);
+            let p = intersection - self.point;
+            let alpha = self.w * (Vec3::cross_multiply(p, self.v));
+            let beta = self.w * (Vec3::cross_multiply(self.u, p));
+            if alpha >= 0.0 && beta >= 0.0 && alpha + beta <= 1.0 {
+                rec.t = t;
+                rec.hit_point = intersection;
+                if ray.direction * self.normal > 0.0 {
+                    rec.normal = self.normal * -1.0;
+                    rec.front_face = false;
+                } else {
+                    rec.normal = self.normal;
+                    rec.front_face = true;
+                }
+                rec.material = self.material.clone();
+                true
+            } else {
+                false
+            }
+        }
+    }
+    fn get_bounding_box(&self) -> &AxisAlignedBoundingBox {
+        &self.bounding_box
+    }
+}
+
 // 平移
 pub struct Translate {
     object: Arc<dyn Hittable>,
