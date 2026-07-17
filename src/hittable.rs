@@ -8,31 +8,31 @@ use crate::vec3::Vec3;
 use rand::{RngExt, rng};
 use std::cmp::Ordering;
 use std::f64::consts::PI;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[allow(unused_variables)]
 pub struct HitRecord {
     pub hit_point: Vec3,
     pub normal: Vec3,
     pub t: f64,
-    pub front_face: bool,           // 是否是外表面
-    pub material: Rc<dyn Material>, // 持有材质的指针
+    pub front_face: bool,            // 是否是外表面
+    pub material: Arc<dyn Material>, // 持有材质的指针
     pub u: f64,
     pub v: f64, // 这两个参数对应texture map
 }
 // 一个可撞击的trait（类比抽象类）
-pub trait Hittable {
+pub trait Hittable: Sync + Send {
     fn hit(&self, ray: &Ray, ray_t: &Interval, rec: &mut HitRecord) -> bool;
     fn get_bounding_box(&self) -> &AxisAlignedBoundingBox;
 }
 pub struct Sphere {
     center: Vec3,
     radius: f64,
-    material: Rc<dyn Material>,
+    material: Arc<dyn Material>,
     bounding_box: AxisAlignedBoundingBox,
 }
 impl Sphere {
-    pub fn new(center: Vec3, radius: f64, material: Rc<dyn Material>) -> Sphere {
+    pub fn new(center: Vec3, radius: f64, material: Arc<dyn Material>) -> Sphere {
         Sphere {
             center,
             radius,
@@ -79,7 +79,7 @@ impl Hittable for Sphere {
             rec.front_face = false;
         }
         (rec.u, rec.v) = self.get_sphere_uv(&rec.hit_point);
-        rec.material = Rc::clone(&self.material);
+        rec.material = Arc::clone(&self.material);
         true
     }
     fn get_bounding_box(&self) -> &AxisAlignedBoundingBox {
@@ -90,11 +90,11 @@ impl Hittable for Sphere {
 pub struct MovingSphere {
     center: Ray,
     radius: f64,
-    material: Rc<dyn Material>,
+    material: Arc<dyn Material>,
     bounding_box: AxisAlignedBoundingBox,
 }
 impl MovingSphere {
-    pub fn new(center: Ray, radius: f64, material: Rc<dyn Material>) -> MovingSphere {
+    pub fn new(center: Ray, radius: f64, material: Arc<dyn Material>) -> MovingSphere {
         let min_x = center.origin.x.min(center.origin.x + center.direction.x);
         let max_x = center.origin.x.max(center.origin.x + center.direction.x);
         let min_y = center.origin.y.min(center.origin.y + center.direction.y);
@@ -141,7 +141,7 @@ impl Hittable for MovingSphere {
             rec.normal = outward_normal * (-1.0);
             rec.front_face = false;
         }
-        rec.material = Rc::clone(&self.material);
+        rec.material = Arc::clone(&self.material);
         true
     }
     fn get_bounding_box(&self) -> &AxisAlignedBoundingBox {
@@ -150,8 +150,8 @@ impl Hittable for MovingSphere {
 }
 // Bounding Volume Hierarchies 优化 二分思想
 pub struct BvhNode {
-    left: Rc<dyn Hittable>,
-    right: Rc<dyn Hittable>,
+    left: Arc<dyn Hittable>,
+    right: Arc<dyn Hittable>,
     bounding_box: AxisAlignedBoundingBox,
 }
 impl Hittable for BvhNode {
@@ -174,7 +174,7 @@ impl Hittable for BvhNode {
     }
 }
 impl BvhNode {
-    pub fn new(objects: &mut Vec<Rc<dyn Hittable>>, start: usize, end: usize) -> Self {
+    pub fn new(objects: &mut Vec<Arc<dyn Hittable>>, start: usize, end: usize) -> Self {
         let mut bounding_box = AxisAlignedBoundingBox::new(
             Interval::new(0.0, 0.0),
             Interval::new(0.0, 0.0),
@@ -186,8 +186,8 @@ impl BvhNode {
         let axis = bounding_box.longest_axis();
 
         let span = end - start;
-        let left: Rc<dyn Hittable>;
-        let right: Rc<dyn Hittable>;
+        let left: Arc<dyn Hittable>;
+        let right: Arc<dyn Hittable>;
         if span == 1 {
             left = objects[start].clone();
             right = objects[start].clone();
@@ -222,8 +222,8 @@ impl BvhNode {
                 });
             }
             let mid = start + span / 2;
-            left = Rc::new(BvhNode::new(objects, start, mid));
-            right = Rc::new(BvhNode::new(objects, mid, end));
+            left = Arc::new(BvhNode::new(objects, start, mid));
+            right = Arc::new(BvhNode::new(objects, mid, end));
         }
         let bounding_box =
             AxisAlignedBoundingBox::merge(left.get_bounding_box(), right.get_bounding_box());
@@ -238,13 +238,13 @@ impl BvhNode {
         let mut rng = rng();
         rng.random_range(min..max)
     }
-    fn x_compare(a: &Rc<dyn Hittable>, b: &Rc<dyn Hittable>) -> bool {
+    fn x_compare(a: &Arc<dyn Hittable>, b: &Arc<dyn Hittable>) -> bool {
         a.get_bounding_box().interval_x.min < b.get_bounding_box().interval_x.min
     }
-    fn y_compare(a: &Rc<dyn Hittable>, b: &Rc<dyn Hittable>) -> bool {
+    fn y_compare(a: &Arc<dyn Hittable>, b: &Arc<dyn Hittable>) -> bool {
         a.get_bounding_box().interval_y.min < b.get_bounding_box().interval_y.min
     }
-    fn z_compare(a: &Rc<dyn Hittable>, b: &Rc<dyn Hittable>) -> bool {
+    fn z_compare(a: &Arc<dyn Hittable>, b: &Arc<dyn Hittable>) -> bool {
         a.get_bounding_box().interval_z.min < b.get_bounding_box().interval_z.min
     }
 }
@@ -256,11 +256,11 @@ pub struct Quad {
     w: Vec3,
     normal: Vec3,
     d: f64,
-    material: Rc<dyn Material>,
+    material: Arc<dyn Material>,
     bounding_box: AxisAlignedBoundingBox,
 }
 impl Quad {
-    pub fn new(point: Vec3, u: Vec3, v: Vec3, material: Rc<dyn Material>) -> Self {
+    pub fn new(point: Vec3, u: Vec3, v: Vec3, material: Arc<dyn Material>) -> Self {
         let point1 = point + u;
         let point2 = point + v;
         let point3 = point + u + v;
@@ -314,12 +314,12 @@ impl Hittable for Quad {
 }
 // 平移
 pub struct Translate {
-    object: Rc<dyn Hittable>,
+    object: Arc<dyn Hittable>,
     offset: Vec3,
     bounding_box: AxisAlignedBoundingBox,
 }
 impl Translate {
-    pub fn new(object: Rc<dyn Hittable>, offset: Vec3) -> Self {
+    pub fn new(object: Arc<dyn Hittable>, offset: Vec3) -> Self {
         let old_box = object.get_bounding_box();
         let point1 = Vec3::new(
             old_box.interval_x.min,
@@ -354,13 +354,13 @@ impl Hittable for Translate {
 }
 // 绕y轴
 pub struct RotateY {
-    object: Rc<dyn Hittable>,
+    object: Arc<dyn Hittable>,
     cos_theta: f64,
     sin_theta: f64,
     bounding_box: AxisAlignedBoundingBox,
 }
 impl RotateY {
-    pub fn new(object: Rc<dyn Hittable>, angle: f64) -> Self {
+    pub fn new(object: Arc<dyn Hittable>, angle: f64) -> Self {
         let cos_theta = (angle / 180.0 * PI).cos();
         let sin_theta = (angle / 180.0 * PI).sin();
 
@@ -446,7 +446,7 @@ impl Hittable for Cube {
     }
 }
 impl Cube {
-    pub fn new(point1: Vec3, point2: Vec3, mat: Rc<dyn Material>) -> Self {
+    pub fn new(point1: Vec3, point2: Vec3, mat: Arc<dyn Material>) -> Self {
         let min = Vec3::new(
             point1.x.min(point2.x),
             point1.y.min(point2.y),
@@ -461,12 +461,12 @@ impl Cube {
         let dy = Vec3::new(0.0, max.y - min.y, 0.0);
         let dz = Vec3::new(0.0, 0.0, max.z - min.z);
         let mut sides = HittableList::new();
-        sides.add(Rc::new(Quad::new(min, dx, dy, mat.clone())));
-        sides.add(Rc::new(Quad::new(min, dx, dz, mat.clone())));
-        sides.add(Rc::new(Quad::new(min, dy, dz, mat.clone())));
-        sides.add(Rc::new(Quad::new(max, dx * -1.0, dy * -1.0, mat.clone())));
-        sides.add(Rc::new(Quad::new(max, dx * -1.0, dz * -1.0, mat.clone())));
-        sides.add(Rc::new(Quad::new(max, dy * -1.0, dz * -1.0, mat.clone())));
+        sides.add(Arc::new(Quad::new(min, dx, dy, mat.clone())));
+        sides.add(Arc::new(Quad::new(min, dx, dz, mat.clone())));
+        sides.add(Arc::new(Quad::new(min, dy, dz, mat.clone())));
+        sides.add(Arc::new(Quad::new(max, dx * -1.0, dy * -1.0, mat.clone())));
+        sides.add(Arc::new(Quad::new(max, dx * -1.0, dz * -1.0, mat.clone())));
+        sides.add(Arc::new(Quad::new(max, dy * -1.0, dz * -1.0, mat.clone())));
         let bounding_box = AxisAlignedBoundingBox::new_from_points(min, max);
         Self {
             sides,
@@ -475,15 +475,15 @@ impl Cube {
     }
 }
 pub struct ConstantMedium {
-    boundary: Rc<dyn Hittable>,
+    boundary: Arc<dyn Hittable>,
     neg_inv_density: f64,
-    phase_function: Rc<dyn Material>,
+    phase_function: Arc<dyn Material>,
 }
 impl ConstantMedium {
     pub fn new(
-        boundary: Rc<dyn Hittable>,
+        boundary: Arc<dyn Hittable>,
         density: f64,
-        phase_function: Rc<dyn Material>,
+        phase_function: Arc<dyn Material>,
     ) -> ConstantMedium {
         Self {
             boundary,
@@ -499,8 +499,8 @@ impl Hittable for ConstantMedium {
             normal: Vec3::new(0.0, 0.0, 0.0),
             t: 0.0,
             front_face: true,
-            material: Rc::new(Lambertian {
-                texture: Rc::new(SolidColor::new(Vec3::new(0.0, 0.0, 0.0))),
+            material: Arc::new(Lambertian {
+                texture: Arc::new(SolidColor::new(Vec3::new(0.0, 0.0, 0.0))),
             }),
             u: 0.0,
             v: 0.0,
@@ -510,8 +510,8 @@ impl Hittable for ConstantMedium {
             normal: Vec3::new(0.0, 0.0, 0.0),
             t: 0.0,
             front_face: true,
-            material: Rc::new(Lambertian {
-                texture: Rc::new(SolidColor::new(Vec3::new(0.0, 0.0, 0.0))),
+            material: Arc::new(Lambertian {
+                texture: Arc::new(SolidColor::new(Vec3::new(0.0, 0.0, 0.0))),
             }),
             u: 0.0,
             v: 0.0,

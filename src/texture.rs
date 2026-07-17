@@ -1,8 +1,8 @@
 use crate::perlin::PerlinNoise;
 use crate::vec3::Vec3;
 use image::{DynamicImage, GenericImageView};
-use std::rc::Rc;
-pub trait Texture {
+use std::sync::Arc;
+pub trait Texture: Sync + Send {
     fn value(&self, u: f64, v: f64, point: &Vec3) -> Vec3;
 }
 pub struct SolidColor {
@@ -20,12 +20,13 @@ impl Texture for SolidColor {
     }
 }
 pub struct CheckeredTexture {
-    odd: Rc<dyn Texture>,
-    even: Rc<dyn Texture>,
+    odd: Arc<dyn Texture>,
+    even: Arc<dyn Texture>,
     scale: f64,
 }
 impl CheckeredTexture {
-    pub fn new(odd: Rc<dyn Texture>, even: Rc<dyn Texture>, scale: f64) -> CheckeredTexture {
+    #[allow(dead_code)]
+    pub fn new(odd: Arc<dyn Texture>, even: Arc<dyn Texture>, scale: f64) -> CheckeredTexture {
         CheckeredTexture { odd, even, scale }
     }
 }

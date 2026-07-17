@@ -3,8 +3,8 @@ use crate::ray::Ray;
 use crate::texture::*;
 use crate::vec3::Vec3;
 use rand::{RngExt, rng};
-use std::rc::Rc;
-pub trait Material {
+use std::sync::Arc;
+pub trait Material: Sync + Send {
     // bool 表示有无表面散射
     fn scatter(
         &self,
@@ -20,7 +20,7 @@ pub trait Material {
 }
 // 漫反射
 pub struct Lambertian {
-    pub texture: Rc<dyn Texture>, // 反照率 [0.0,1.0]
+    pub texture: Arc<dyn Texture>, // 反照率 [0.0,1.0]
 }
 impl Material for Lambertian {
     fn scatter(
@@ -155,11 +155,11 @@ impl Material for Emissive {
     }
 }
 pub struct Isotropic {
-    pub texture: Rc<dyn Texture>,
+    pub texture: Arc<dyn Texture>,
 }
 impl Isotropic {
     #[allow(dead_code)]
-    pub fn new(texture: Rc<dyn Texture>) -> Isotropic {
+    pub fn new(texture: Arc<dyn Texture>) -> Isotropic {
         Isotropic { texture }
     }
 }

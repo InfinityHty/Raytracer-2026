@@ -9,7 +9,8 @@ use console::style; // 给控制台打印的文字加颜色、加粗等样式
 use image::{ImageBuffer, RgbImage}; // Rust最主流的图像处理库 创建画布 逐像素绘制光线追踪结果 导出文件图片
 use indicatif::ProgressBar; // 进度条可视化
 use rand::{RngExt, rng};
-use std::rc::Rc;
+use std::sync::Arc;
+use std::thread;
 pub struct Camera {
     aspect_ration: f64,
     width: u32,
@@ -52,9 +53,9 @@ impl Camera {
             background,
         }
     }
-    pub fn render(&self, world: &HittableList) {
+    pub fn render(self: Arc<Self>, world: Arc<HittableList>) {
         // 保存路径
-        let path = std::path::Path::new("output/book2/image23.png");
+        let path = std::path::Path::new("output/book2/image23_2.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
@@ -91,35 +92,95 @@ impl Camera {
         } else {
             ProgressBar::new((height * self.width) as u64)
         };
-        // 逐像素渲染
-        for j in 0..height {
-            for i in 0..self.width {
-                let pixel_ij = pixel_00 + pixel_u * i as f64 + pixel_v * j as f64;
-                let pixel = img.get_pixel_mut(i, j);
-
-                let mut pixel_color = Vec3::new(0.0, 0.0, 0.0);
-                for _sample_times in 0..self.samples_per_pixel {
-                    let ray = Camera::get_ray(
-                        pixel_ij,
-                        &self.look_from,
-                        pixel_u,
-                        pixel_v,
-                        defocus_disk_u,
-                        defocus_disk_v,
-                    );
-                    pixel_color = pixel_color + self.ray_color(&ray, world, self.max_depth);
-                }
-                pixel_color = pixel_color / self.samples_per_pixel as f64;
-                let color_interval = Interval::new(0.0, 1.0);
-                pixel_color.x = color_interval.clamp(pixel_color.x);
-                pixel_color.y = color_interval.clamp(pixel_color.y);
-                pixel_color.z = color_interval.clamp(pixel_color.z);
-
-                pixel_color = Camera::linear_to_gamma(pixel_color);
-                pixel_color = pixel_color * 255.0;
-                *pixel = pixel_color.to_rgb();
+        // 单线程
+        // for j in 0..height {
+        //     for i in 0..self.width {
+        //         let pixel_ij = pixel_00 + pixel_u * i as f64 + pixel_v * j as f64;
+        //         let pixel = img.get_pixel_mut(i, j);
+        //
+        //         let mut pixel_color = Vec3::new(0.0, 0.0, 0.0);
+        //         for _sample_times in 0..self.samples_per_pixel {
+        //             let ray = Camera::get_ray(
+        //                 pixel_ij,
+        //                 &self.look_from,
+        //                 pixel_u,
+        //                 pixel_v,
+        //                 defocus_disk_u,
+        //                 defocus_disk_v,
+        //             );
+        //             pixel_color = pixel_color + self.ray_color(&ray, &world, self.max_depth);
+        //         }
+        //         pixel_color = pixel_color / self.samples_per_pixel as f64;
+        //         let color_interval = Interval::new(0.0, 1.0);
+        //         pixel_color.x = color_interval.clamp(pixel_color.x);
+        //         pixel_color.y = color_interval.clamp(pixel_color.y);
+        //         pixel_color.z = color_interval.clamp(pixel_color.z);
+        //
+        //         pixel_color = Camera::linear_to_gamma(pixel_color);
+        //         pixel_color = pixel_color * 255.0;
+        //         *pixel = pixel_color.to_rgb();
+        //     }
+        //     progress.inc(1);
+        // }
+        // progress.finish();
+        // 多线程并发
+        let mut handles = vec![];
+        let number_of_thread = 8;
+        for i in 0..number_of_thread {
+            let start_line = i * height / number_of_thread;
+            let mut end_line = (i + 1) * height / number_of_thread;
+            if i == number_of_thread - 1 {
+                end_line = height;
             }
-            progress.inc(1);
+            let thread_world = Arc::clone(&world);
+            let thread_camera = self.clone();
+            let handle = thread::spawn(move || {
+                let mut local_rows = vec![];
+                for i in start_line..end_line {
+                    let mut row_colors = vec![];
+                    for j in 0..thread_camera.width {
+                        let pixel_ij = pixel_00 + pixel_u * i as f64 + pixel_v * j as f64;
+
+                        let mut pixel_color = Vec3::new(0.0, 0.0, 0.0);
+                        for _sample_times in 0..thread_camera.samples_per_pixel {
+                            let ray = Camera::get_ray(
+                                pixel_ij,
+                                &thread_camera.look_from,
+                                pixel_u,
+                                pixel_v,
+                                defocus_disk_u,
+                                defocus_disk_v,
+                            );
+                            pixel_color = pixel_color
+                                + thread_camera.ray_color(
+                                    &ray,
+                                    &thread_world,
+                                    thread_camera.max_depth,
+                                );
+                        }
+                        pixel_color = pixel_color / thread_camera.samples_per_pixel as f64;
+                        let color_interval = Interval::new(0.0, 1.0);
+                        pixel_color.x = color_interval.clamp(pixel_color.x);
+                        pixel_color.y = color_interval.clamp(pixel_color.y);
+                        pixel_color.z = color_interval.clamp(pixel_color.z);
+                        pixel_color = Camera::linear_to_gamma(pixel_color);
+                        pixel_color = pixel_color * 255.0;
+                        row_colors.push(pixel_color.to_rgb());
+                    }
+                    local_rows.push((i, row_colors));
+                }
+                local_rows
+            });
+            handles.push(handle);
+        }
+        for handle in handles {
+            let rendered_rows = handle.join().unwrap();
+            for (x, row) in rendered_rows {
+                for y in 0..self.width {
+                    *img.get_pixel_mut(x, y) = row[y as usize];
+                    progress.inc(1);
+                }
+            }
         }
         progress.finish();
 
@@ -140,8 +201,8 @@ impl Camera {
             normal: Vec3::new(0.0, 0.0, 0.0),
             t: 0.0,
             front_face: true,
-            material: Rc::new(Lambertian {
-                texture: Rc::new(SolidColor::new(Vec3::new(0.0, 0.0, 0.0))),
+            material: Arc::new(Lambertian {
+                texture: Arc::new(SolidColor::new(Vec3::new(0.0, 0.0, 0.0))),
             }),
             u: 0.0,
             v: 0.0,
