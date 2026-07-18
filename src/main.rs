@@ -20,8 +20,115 @@ use rand::{RngExt, rng};
 use std::path::Path;
 use std::sync::Arc;
 use texture::*;
-
 fn main() {
+    // Cornell box
+    let mut world = HittableList::new();
+    let red = Arc::new(Lambertian {
+        texture: Arc::new(SolidColor::new(Vec3::new(0.65, 0.05, 0.05))),
+    });
+    let white = Arc::new(Lambertian {
+        texture: Arc::new(SolidColor::new(Vec3::new(0.73, 0.73, 0.73))),
+    });
+    let green = Arc::new(Lambertian {
+        texture: Arc::new(SolidColor::new(Vec3::new(0.12, 0.45, 0.15))),
+    });
+    let light = Arc::new(Emissive {
+        emit_color: Vec3::new(15.0, 15.0, 15.0),
+    });
+
+    let wall0 = Arc::new(Quad::new(
+        Vec3::new(555.0, 0.0, 0.0),
+        Vec3::new(0.0, 555.0, 0.0),
+        Vec3::new(0.0, 0.0, 555.0),
+        green,
+    ));
+    let wall1 = Arc::new(Quad::new(
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(0.0, 555.0, 0.0),
+        Vec3::new(0.0, 0.0, 555.0),
+        red,
+    ));
+    let light_source = Arc::new(Quad::new(
+        Vec3::new(343.0, 554.0, 332.0),
+        Vec3::new(-130.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, -105.0),
+        light,
+    ));
+    let wall3 = Arc::new(Quad::new(
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(555.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, 555.0),
+        white.clone(),
+    ));
+    let wall4 = Arc::new(Quad::new(
+        Vec3::new(555.0, 555.0, 555.0),
+        Vec3::new(-555.0, 0.0, 0.0),
+        Vec3::new(0.0, 0.0, -555.0),
+        white.clone(),
+    ));
+    let wall5 = Arc::new(Quad::new(
+        Vec3::new(0.0, 0.0, 555.0),
+        Vec3::new(555.0, 0.0, 0.0),
+        Vec3::new(0.0, 555.0, 0.0),
+        white.clone(),
+    ));
+    world.add(wall0);
+    world.add(wall1);
+    world.add(light_source);
+    world.add(wall3);
+    world.add(wall4);
+    world.add(wall5);
+    let box1 = Arc::new(Cube::new(
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(165.0, 330.0, 165.0),
+        white.clone(),
+    ));
+    let box2 = Arc::new(Cube::new(
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(165.0, 165.0, 165.0),
+        white.clone(),
+    ));
+    let rotated_box1 = Arc::new(RotateY::new(box1, 15.0));
+    let rotated_box2 = Arc::new(RotateY::new(box2, -18.0));
+    let moved_box1 = Arc::new(Translate::new(rotated_box1, Vec3::new(265.0, 0.0, 295.0)));
+    let moved_box2 = Arc::new(Translate::new(rotated_box2, Vec3::new(130.0, 0.0, 65.0)));
+    // world.add_box(Vec3::new(130.0, 0.0, 65.0),Vec3::new(295.0, 165.0, 230.0),white.clone());
+    // world.add_box(Vec3::new(265.0,0.0,295.0),Vec3::new(430.0,330.0,460.0),white.clone());
+    world.add(moved_box1);
+    world.add(moved_box2);
+
+    let aspect_ration = 1.0;
+    let width = 600;
+    let samples_per_pixel = 64;
+    let camera_max_depth = 50;
+    let field_of_view = 40.0;
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+    let look_from = Vec3::new(278.0, 278.0, -800.0);
+    let look_at = Vec3::new(278.0, 278.0, 0.0);
+    let view_up = Vec3::new(0.0, 1.0, 0.0);
+    let background = Vec3::new(0.0, 0.0, 0.0);
+    let camera = Camera::new(
+        aspect_ration,
+        width,
+        samples_per_pixel,
+        camera_max_depth,
+        field_of_view,
+        look_from,
+        look_at,
+        view_up,
+        defocus_angle,
+        focus_dist,
+        background,
+    );
+    let mut bvh_world = HittableList::new();
+    let cnt = world.objects.len();
+    bvh_world.add(Arc::new(BvhNode::new(&mut world.objects, 0, cnt)));
+    // 渲染图片
+    Arc::new(camera).render(Arc::new(bvh_world));
+}
+#[allow(dead_code)]
+fn load_3d_object() {
     let mut world = HittableList::new();
     // 读取命令行数据 支持多个模型
     let obj_files: Vec<String> = std::env::args().skip(1).collect();

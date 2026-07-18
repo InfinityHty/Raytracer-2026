@@ -55,7 +55,7 @@ impl Camera {
     }
     pub fn render(self: Arc<Self>, world: Arc<HittableList>) {
         // 保存路径
-        let path = std::path::Path::new("output/bonus/image1.png");
+        let path = std::path::Path::new("output/bonus/image2_2.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
@@ -142,22 +142,50 @@ impl Camera {
                         let pixel_ij = pixel_00 + pixel_u * i as f64 + pixel_v * j as f64;
 
                         let mut pixel_color = Vec3::new(0.0, 0.0, 0.0);
-                        for _sample_times in 0..thread_camera.samples_per_pixel {
-                            let ray = Camera::get_ray(
-                                pixel_ij,
-                                &thread_camera.look_from,
-                                pixel_u,
-                                pixel_v,
-                                defocus_disk_u,
-                                defocus_disk_v,
-                            );
-                            pixel_color = pixel_color
-                                + thread_camera.ray_color(
-                                    &ray,
-                                    &thread_world,
-                                    thread_camera.max_depth,
+                        // 随机采样
+                        // for _sample_times in 0..thread_camera.samples_per_pixel {
+                        //     let ray = Camera::get_ray(
+                        //         pixel_ij,
+                        //         &thread_camera.look_from,
+                        //         pixel_u,
+                        //         pixel_v,
+                        //         defocus_disk_u,
+                        //         defocus_disk_v,
+                        //     );
+                        //     pixel_color = pixel_color
+                        //         + thread_camera.ray_color(
+                        //             &ray,
+                        //             &thread_world,
+                        //             thread_camera.max_depth,
+                        //         );
+                        // }
+
+                        // 分层抽样 stratified sampling
+                        let sqrt_samples_per_pixel =
+                            (thread_camera.samples_per_pixel as f64).sqrt();
+                        let recip_sqrt_spp = 1.0 / sqrt_samples_per_pixel;
+                        for s_i in 0..sqrt_samples_per_pixel as usize {
+                            for s_j in 0..sqrt_samples_per_pixel as usize {
+                                let ray = Camera::get_ray(
+                                    pixel_ij,
+                                    s_i,
+                                    s_j,
+                                    recip_sqrt_spp,
+                                    &thread_camera.look_from,
+                                    pixel_u,
+                                    pixel_v,
+                                    defocus_disk_u,
+                                    defocus_disk_v,
                                 );
+                                pixel_color = pixel_color
+                                    + thread_camera.ray_color(
+                                        &ray,
+                                        &thread_world,
+                                        thread_camera.max_depth,
+                                    );
+                            }
                         }
+
                         pixel_color = pixel_color / thread_camera.samples_per_pixel as f64;
                         let color_interval = Interval::new(0.0, 1.0);
                         pixel_color.x = color_interval.clamp(pixel_color.x);
@@ -235,15 +263,19 @@ impl Camera {
     }
     fn get_ray(
         pixel_center: Vec3,
+        s_i: usize,
+        s_j: usize,
+        recip_sqrt_spp: f64,
         eye_point: &Vec3,
         delta_u: Vec3,
         delta_v: Vec3,
         defocus_disk_u: Vec3,
         defocus_disk_v: Vec3,
     ) -> Ray {
+        let offset = Vec3::new((s_i as f64 + Camera::random_range(0.0,1.0)) * recip_sqrt_spp - 0.5, (s_j as f64 + Camera::random_range(0.0,1.0)) * recip_sqrt_spp - 0.5, 0.0);
         // 一定范围内随机采样
         let pixel_sample =
-            pixel_center + delta_u * Camera::random(0.5) + delta_v * Camera::random(0.5);
+            pixel_center + delta_u * offset.x + delta_v * offset.y;
         let mut origin = Vec3::new(eye_point.x, eye_point.y, eye_point.z);
         let defocus_vec = Vec3::generate_rand_unit_disk(-1.0, 1.0);
         origin = origin + defocus_disk_u * defocus_vec.x + defocus_disk_v * defocus_vec.y;
@@ -254,6 +286,10 @@ impl Camera {
     fn random(range: f64) -> f64 {
         let mut rng = rng();
         rng.random_range(-range..range)
+    }
+    fn random_range(min: f64,max: f64) -> f64 {
+        let mut rng = rng();
+        rng.random_range(min..max)
     }
     fn linear_to_gamma(linear: Vec3) -> Vec3 {
         Vec3::new(linear.x.sqrt(), linear.y.sqrt(), linear.z.sqrt())
