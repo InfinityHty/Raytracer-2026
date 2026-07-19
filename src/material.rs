@@ -34,16 +34,16 @@ impl Material for Lambertian {
         rec: &HitRecord,
         attenuation: &mut Vec3,
     ) -> bool {
-        scattered_ray.direction = rec.normal + Vec3::generate_rand_norm(-1.0, 1.0);
-        if scattered_ray.direction.near_zero() {
-            scattered_ray.direction = rec.normal;
-        }
-        // let dir = Vec3::generate_rand_norm(-1.0, 1.0);
-        // if dir * rec.normal < 0.0 {
-        //     scattered_ray.direction = dir * -1.0;
-        // } else {
-        //     scattered_ray.direction = dir;
+        // scattered_ray.direction = rec.normal + Vec3::generate_rand_norm(-1.0, 1.0);
+        // if scattered_ray.direction.near_zero() {
+        //     scattered_ray.direction = rec.normal;
         // }
+        let dir = Vec3::generate_rand_norm(-1.0, 1.0);
+        if dir * rec.normal < 0.0 {
+            scattered_ray.direction = dir * -1.0;
+        } else {
+            scattered_ray.direction = dir;
+        }
         scattered_ray.origin = Vec3::new(rec.hit_point.x, rec.hit_point.y, rec.hit_point.z);
         let texture_value = self.texture.value(rec.u, rec.v, &rec.hit_point);
         attenuation.x = texture_value.x;
@@ -52,12 +52,14 @@ impl Material for Lambertian {
         scattered_ray.time = in_ray.time;
         true
     }
-    fn scattering_pdf(&self, _in_ray: &Ray, scattered_ray: &Ray, rec: &HitRecord) -> f64 {
-        let cos_theta = rec.normal * scattered_ray.direction.normalize();
-        if cos_theta < 0.0 {
-            return 0.0;
-        }
-        cos_theta / std::f64::consts::PI
+    #[allow(unused_variables)]
+    fn scattering_pdf(&self, in_ray: &Ray, scattered_ray: &Ray, rec: &HitRecord) -> f64 {
+        // let cos_theta = rec.normal * scattered_ray.direction.normalize();
+        // if cos_theta < 0.0 {
+        //     return 0.0;
+        // }
+        // cos_theta / std::f64::consts::PI
+        1.0 / (2.0 * std::f64::consts::PI)
     }
 }
 

@@ -55,7 +55,7 @@ impl Camera {
     }
     pub fn render(self: Arc<Self>, world: Arc<HittableList>) {
         // 保存路径
-        let path = std::path::Path::new("output/book3/image4_2.png");
+        let path = std::path::Path::new("output/book3/image5.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
@@ -247,7 +247,7 @@ impl Camera {
                 .scatter(ray, &mut scattered_ray, &rec, &mut reflect_rate)
             {
                 let scattering_pdf = rec.material.scattering_pdf(ray, &scattered_ray, &rec); // 材料散射性质PDF
-                let pdf_value = 1.0 / (2.0 * std::f64::consts::PI); // 采样时选取的PDF
+                let pdf_value = scattering_pdf; // 采样时选取的PDF
                 let mut color = self.ray_color(&scattered_ray, world, depth - 1);
                 color.x *= reflect_rate.x * scattering_pdf / pdf_value;
                 color.y *= reflect_rate.y * scattering_pdf / pdf_value;
