@@ -13,10 +13,10 @@ pub trait Material: Sync + Send {
         rec: &HitRecord,
         attenuation: &mut Vec3, // 衰减
     ) -> bool;
-    // #[allow(unused_variables)]
-    // fn scattering_pdf(in_ray: &Ray, scattered_ray: &Ray, rec: HitRecord) -> f64 {
-    //     0.0
-    // }
+    #[allow(unused_variables)]
+    fn scattering_pdf(&self, in_ray: &Ray, scattered_ray: &Ray, rec: &HitRecord) -> f64 {
+        0.0
+    }
     #[allow(unused_variables)]
     fn emitted(&self, u: f64, v: f64, point: Vec3) -> Vec3 {
         Vec3::new(0.0, 0.0, 0.0)
@@ -38,6 +38,12 @@ impl Material for Lambertian {
         if scattered_ray.direction.near_zero() {
             scattered_ray.direction = rec.normal;
         }
+        // let dir = Vec3::generate_rand_norm(-1.0, 1.0);
+        // if dir * rec.normal < 0.0 {
+        //     scattered_ray.direction = dir * -1.0;
+        // } else {
+        //     scattered_ray.direction = dir;
+        // }
         scattered_ray.origin = Vec3::new(rec.hit_point.x, rec.hit_point.y, rec.hit_point.z);
         let texture_value = self.texture.value(rec.u, rec.v, &rec.hit_point);
         attenuation.x = texture_value.x;
@@ -45,6 +51,13 @@ impl Material for Lambertian {
         attenuation.z = texture_value.z;
         scattered_ray.time = in_ray.time;
         true
+    }
+    fn scattering_pdf(&self, _in_ray: &Ray, scattered_ray: &Ray, rec: &HitRecord) -> f64 {
+        let cos_theta = rec.normal * scattered_ray.direction.normalize();
+        if cos_theta < 0.0 {
+            return 0.0;
+        }
+        cos_theta / std::f64::consts::PI
     }
 }
 

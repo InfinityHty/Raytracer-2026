@@ -37,6 +37,7 @@ impl Vec3 {
             }
         }
     }
+    #[allow(dead_code)]
     pub fn near_zero(&self) -> bool {
         const EPSILON: f64 = 1e-8;
         if self.x.abs() < EPSILON && self.y.abs() < EPSILON && self.z.abs() < EPSILON {
