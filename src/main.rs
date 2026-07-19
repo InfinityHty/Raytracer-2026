@@ -99,7 +99,7 @@ fn main() {
 
     let aspect_ration = 1.0;
     let width = 600;
-    let samples_per_pixel = 64;
+    let samples_per_pixel = 1000;
     let camera_max_depth = 50;
     let field_of_view = 40.0;
     let defocus_angle = 0.0;

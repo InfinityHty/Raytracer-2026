@@ -181,3 +181,6 @@ Support 3D model file (.obj) loading
 ```
 ##### Example of importing and rendering a 3D paper crane.
 ![output](./assets/paper_crane.png "")
+
+### 3. Probability Density Function (PDF)
+

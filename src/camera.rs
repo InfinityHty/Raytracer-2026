@@ -55,7 +55,7 @@ impl Camera {
     }
     pub fn render(self: Arc<Self>, world: Arc<HittableList>) {
         // 保存路径
-        let path = std::path::Path::new("output/bonus/image2_2.png");
+        let path = std::path::Path::new("output/book3/image3.png");
         let prefix = path.parent().unwrap();
         std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
         // 相机内参
@@ -261,6 +261,7 @@ impl Camera {
             self.background
         }
     }
+    #[allow(clippy::too_many_arguments)]
     fn get_ray(
         pixel_center: Vec3,
         s_i: usize,
@@ -272,10 +273,13 @@ impl Camera {
         defocus_disk_u: Vec3,
         defocus_disk_v: Vec3,
     ) -> Ray {
-        let offset = Vec3::new((s_i as f64 + Camera::random_range(0.0,1.0)) * recip_sqrt_spp - 0.5, (s_j as f64 + Camera::random_range(0.0,1.0)) * recip_sqrt_spp - 0.5, 0.0);
+        let offset = Vec3::new(
+            (s_i as f64 + Camera::random_range(0.0, 1.0)) * recip_sqrt_spp - 0.5,
+            (s_j as f64 + Camera::random_range(0.0, 1.0)) * recip_sqrt_spp - 0.5,
+            0.0,
+        );
         // 一定范围内随机采样
-        let pixel_sample =
-            pixel_center + delta_u * offset.x + delta_v * offset.y;
+        let pixel_sample = pixel_center + delta_u * offset.x + delta_v * offset.y;
         let mut origin = Vec3::new(eye_point.x, eye_point.y, eye_point.z);
         let defocus_vec = Vec3::generate_rand_unit_disk(-1.0, 1.0);
         origin = origin + defocus_disk_u * defocus_vec.x + defocus_disk_v * defocus_vec.y;
@@ -287,7 +291,7 @@ impl Camera {
         let mut rng = rng();
         rng.random_range(-range..range)
     }
-    fn random_range(min: f64,max: f64) -> f64 {
+    fn random_range(min: f64, max: f64) -> f64 {
         let mut rng = rng();
         rng.random_range(min..max)
     }

@@ -13,6 +13,10 @@ pub trait Material: Sync + Send {
         rec: &HitRecord,
         attenuation: &mut Vec3, // 衰减
     ) -> bool;
+    // #[allow(unused_variables)]
+    // fn scattering_pdf(in_ray: &Ray, scattered_ray: &Ray, rec: HitRecord) -> f64 {
+    //     0.0
+    // }
     #[allow(unused_variables)]
     fn emitted(&self, u: f64, v: f64, point: Vec3) -> Vec3 {
         Vec3::new(0.0, 0.0, 0.0)
